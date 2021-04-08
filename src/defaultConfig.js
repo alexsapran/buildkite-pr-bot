@@ -16,5 +16,11 @@ module.exports = {
       configBranch: 'buildkite-pr-bot',
       // configPath: '',
     },
+    {
+      owner: 'elastic',
+      repo: 'kibana-github-actions',
+      configBranch: 'main',
+      configPath: '.buildkite/pull-requests.json',
+    },
   ],
 };
