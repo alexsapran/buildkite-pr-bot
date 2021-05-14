@@ -28,7 +28,7 @@ steps:
         '--platform',
         'managed',
         '--service-account',
-        'kibana-buildkite-pr-bot@elastic-kibana-184716.iam.gserviceaccount.com',
+        'kibana-buildkite-pr-bot@elastic-kibana-ci.iam.gserviceaccount.com',
         '--allow-unauthenticated',
         '--concurrency',
         '80',
