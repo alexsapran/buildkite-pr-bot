@@ -25,6 +25,8 @@ export default class PullRequests {
     const buildParams = {
       GITHUB_PR_NUMBER: pullRequest.number.toString(),
       GITHUB_PR_TARGET_BRANCH: targetBranch,
+      GITHUB_PR_BASE_OWNER: pullRequest.base.repo.owner.login,
+      GITHUB_PR_BASE_REPO: pullRequest.base.repo.name,
       GITHUB_PR_OWNER: pullRequest.head.repo.owner.login,
       GITHUB_PR_REPO: pullRequest.head.repo.name,
       GITHUB_PR_BRANCH: pullRequest.head.ref,
@@ -43,18 +45,23 @@ export default class PullRequests {
       }
     }
 
-    const status = await this.buildkite.triggerBuild(prConfig.pipelineSlug, {
-      branch: `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`,
-      commit: pullRequest.head.sha,
-      pull_request_base_branch: targetBranch,
-      pull_request_id: pullRequest.number,
-      pull_request_repository: pullRequest.head.repo.git_url, // TODO clone_url?
-      env: buildParams,
-    });
+    try {
+      const status = await this.buildkite.triggerBuild(prConfig.pipelineSlug, {
+        branch: `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`,
+        commit: pullRequest.head.sha,
+        pull_request_base_branch: targetBranch,
+        pull_request_id: pullRequest.number,
+        pull_request_repository: pullRequest.head.repo.git_url, // TODO clone_url?
+        env: buildParams,
+      });
 
-    context.log(`Triggered build #${status.number} - ${status.web_url}`);
+      context.log(`Triggered build #${status.number} - ${status.web_url}`);
 
-    return status;
+      return status;
+    } catch (ex) {
+      console.error(ex);
+      throw ex;
+    }
   };
 
   triggerBuild = async (prConfig: PrConfig, context: PullRequestEventContext) => {

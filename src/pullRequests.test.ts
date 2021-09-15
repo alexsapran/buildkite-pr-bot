@@ -25,6 +25,12 @@ const createMocks = () => {
       base: {
         ref: 'TARGET_BRANCH',
         sha: 'TARGET_SHA',
+        repo: {
+          name: 'TARGET_REPO',
+          owner: {
+            login: 'TARGET_OWNER',
+          },
+        },
       },
       head: {
         ref: 'PR_BRANCH',
@@ -94,6 +100,8 @@ describe('pullRequests', () => {
           "branch": "PR_OWNER:PR_BRANCH",
           "commit": "PR_SHA",
           "env": Object {
+            "GITHUB_PR_BASE_OWNER": "TARGET_OWNER",
+            "GITHUB_PR_BASE_REPO": "TARGET_REPO",
             "GITHUB_PR_BRANCH": "PR_BRANCH",
             "GITHUB_PR_LABELS": "label_1,label_2",
             "GITHUB_PR_NUMBER": "12345",
@@ -148,6 +156,8 @@ describe('pullRequests', () => {
           "branch": "PR_OWNER:PR_BRANCH",
           "commit": "PR_SHA",
           "env": Object {
+            "GITHUB_PR_BASE_OWNER": "TARGET_OWNER",
+            "GITHUB_PR_BASE_REPO": "TARGET_REPO",
             "GITHUB_PR_BRANCH": "PR_BRANCH",
             "GITHUB_PR_COMMENT_VAR_LOCATION": "place",
             "GITHUB_PR_COMMENT_VAR_PRODUCT": "thing",
