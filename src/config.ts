@@ -9,17 +9,20 @@ export const getRepoConfig = (repoOwner: string, repoName: string, config = appC
 
 // TODO error scenarios etc
 export default async function getConfigs(repoOwner: string, repoName: string, github: Octokit, config = appConfig) {
-  const repoConfig = getRepoConfig(repoOwner, repoName, config);
+  let repoConfig = getRepoConfig(repoOwner, repoName, config);
 
   if (!repoConfig) {
-    return null;
+    repoConfig = {
+      owner: repoOwner,
+      repo: repoName,
+    };
   }
 
   const contents = await github.repos.getContent({
     owner: repoConfig.configOwner || repoConfig.owner,
     repo: repoConfig.configRepo || repoConfig.repo,
-    ref: repoConfig.configBranch || 'master',
-    path: repoConfig.configPath || '.ci/pull-requests.json',
+    ref: repoConfig.configBranch || 'main',
+    path: repoConfig.configPath || '.buildkite/pull-requests.json',
   });
 
   const json = Buffer.from(contents.data.content, 'base64').toString();

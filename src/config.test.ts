@@ -23,6 +23,7 @@ describe('config', () => {
       expect(repoConfig).toBeUndefined();
     });
   });
+
   describe('getConfigs', () => {
     let mockGithub: Octokit;
 
@@ -52,11 +53,6 @@ describe('config', () => {
       const configs = await getConfigs('test-owner', 'test-repo', mockGithub, config);
       expect(configs).not.toBeNull();
       expect(configs[0].repoName).toBe('test-repo');
-    });
-
-    it('should return null', async () => {
-      const configs = await getConfigs('dne', 'dne', mockGithub, config);
-      expect(configs).toBeNull();
     });
   });
 });
