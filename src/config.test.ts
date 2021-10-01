@@ -18,9 +18,12 @@ describe('config', () => {
       expect(repoConfig.repo).toBe('test-repo');
     });
 
-    it('should return undefined', async () => {
+    it('should return default config', async () => {
       const repoConfig = getRepoConfig('dne', 'test-repo', config);
-      expect(repoConfig).toBeUndefined();
+      expect(repoConfig).toEqual({
+        owner: 'dne',
+        repo: 'test-repo',
+      });
     });
   });
 

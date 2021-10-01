@@ -4,18 +4,24 @@ import { PrConfig } from './models/prConfig';
 const appConfig = require(process.env.APP_CONFIG || './defaultConfig.js');
 
 export const getRepoConfig = (repoOwner: string, repoName: string, config = appConfig) => {
-  return config.repos.find((repo) => repo.owner === repoOwner && repo.repo === repoName);
-};
-
-// TODO error scenarios etc
-export default async function getConfigs(repoOwner: string, repoName: string, github: Octokit, config = appConfig) {
-  let repoConfig = getRepoConfig(repoOwner, repoName, config);
+  let repoConfig = config.repos.find((repo) => repo.owner === repoOwner && repo.repo === repoName);
 
   if (!repoConfig) {
     repoConfig = {
       owner: repoOwner,
       repo: repoName,
     };
+  }
+
+  return repoConfig;
+};
+
+// TODO error scenarios etc
+export default async function getConfigs(repoOwner: string, repoName: string, github: Octokit, config = appConfig) {
+  const repoConfig = getRepoConfig(repoOwner, repoName, config);
+
+  if (!repoConfig) {
+    return null;
   }
 
   const contents = await github.repos.getContent({

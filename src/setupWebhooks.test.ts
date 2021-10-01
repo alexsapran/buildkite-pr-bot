@@ -57,25 +57,25 @@ describe('setupWebhooks', () => {
       expect(context.comment.body).toBe('buildkite build this');
     });
 
-    it('should not trigger PR handler for a non-configured repo', async () => {
+    it('should trigger PR handler for a non-configured repo', async () => {
       await doSetup();
       const prComment = require('./test-payloads/trigger-comment')();
       prComment.payload.repository.name = 'invalid-repo';
       await webhooks.receive(prComment);
 
-      expect(pullRequestsMock.handleContext).not.toHaveBeenCalled();
+      expect(pullRequestsMock.handleContext).toHaveBeenCalledTimes(1);
     });
   });
 
   describe('pull_request.opened', () => {
+    const runTimers = jest.fn(() => {
+      jest.advanceTimersByTime(9000);
+      expect(pullRequestsMock.handleContext).toHaveBeenCalledTimes(0);
+      jest.runAllTimers();
+    });
+
     it('should trigger PR handler for a configured repo and wait 10 seconds for labels to settle', async () => {
       await doSetup();
-
-      const runTimers = jest.fn(() => {
-        jest.advanceTimersByTime(9000);
-        expect(pullRequestsMock.handleContext).toHaveBeenCalledTimes(0);
-        jest.runAllTimers();
-      });
 
       webhooks.onAny(runTimers);
 
@@ -94,16 +94,15 @@ describe('setupWebhooks', () => {
       expect(context.label).toBeFalsy();
     });
 
-    it('should not trigger PR handler for a non-configured repo', async () => {
+    it('should trigger PR handler for a non-configured repo', async () => {
       await doSetup();
+      webhooks.onAny(runTimers);
       const prOpened = require('./test-payloads/pr-opened')();
       prOpened.payload.repository.name = 'invalid-repo';
       await webhooks.receive(prOpened);
 
-      // Just in case. There shouldn't be any timers here
-      jest.runAllTimers();
-
-      expect(pullRequestsMock.handleContext).not.toHaveBeenCalled();
+      expect(runTimers).toHaveBeenCalled();
+      expect(pullRequestsMock.handleContext).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -124,13 +123,13 @@ describe('setupWebhooks', () => {
       expect(context.label).toBeFalsy();
     });
 
-    it('should not trigger PR handler for a non-configured repo', async () => {
+    it('should trigger PR handler for a non-configured repo', async () => {
       await doSetup();
       const prUpdated = require('./test-payloads/pr-synchronize')();
       prUpdated.payload.repository.name = 'invalid-repo';
       await webhooks.receive(prUpdated);
 
-      expect(pullRequestsMock.handleContext).not.toHaveBeenCalled();
+      expect(pullRequestsMock.handleContext).toHaveBeenCalledTimes(1);
     });
   });
 });

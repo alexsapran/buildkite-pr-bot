@@ -79,6 +79,7 @@ export default async (github: Octokit, pullRequests: PullRequests, webhooks: Web
   });
 
   if (process.env.DRY_RUN) {
+    // await webhooks.receive(require('./test-payloads/ga')());
     await webhooks.receive(require('./test-payloads/pr-opened')());
     // await webhooks.receive(require('./test-payloads/pr-synchronize')());
     // await webhooks.receive(require('./test-payloads/trigger-comment')());
