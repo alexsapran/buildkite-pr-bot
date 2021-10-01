@@ -5,6 +5,7 @@ module.exports = {
       repo: 'kibana',
 
       configBranch: 'buildkite-pr-bot',
+      configPath: '.ci/pull-requests.json',
       // configPath: '',
     },
     {
