@@ -4,9 +4,8 @@ module.exports = {
       owner: 'elastic',
       repo: 'kibana',
 
-      configBranch: 'buildkite-pr-bot',
-      configPath: '.ci/pull-requests.json',
-      // configPath: '',
+      configBranch: 'master',
+      configPath: '.buildkite/pull_requests.json',
     },
     {
       owner: 'brianseeders',
@@ -15,7 +14,6 @@ module.exports = {
       configOwner: 'brianseeders',
       configRepo: 'kibana',
       configBranch: 'buildkite-pr-bot',
-      // configPath: '',
     },
     {
       owner: 'elastic',
