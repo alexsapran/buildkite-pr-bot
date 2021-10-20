@@ -319,6 +319,21 @@ describe('pullRequests', () => {
       expect(pr.triggerBuild).not.toHaveBeenCalled();
     });
 
+    it('should not trigger a build if a skip-ci label is present', async () => {
+      mocks.PR.labels = [
+        {
+          name: 'skip-me',
+        },
+      ] as RestEndpointMethodTypes['pulls']['get']['response']['data']['labels'];
+
+      const prConfig = createPrConfig({
+        skip_ci_labels: ['skip-this', 'skip-me'],
+      });
+
+      const { pr } = await doContextTest({}, [prConfig]);
+      expect(pr.triggerBuild).not.toHaveBeenCalled();
+    });
+
     describe('with a comment event', () => {
       it('should trigger and set the parsed comment if the comment is valid', async () => {
         const comment = {

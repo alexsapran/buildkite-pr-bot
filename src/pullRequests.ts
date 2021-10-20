@@ -111,12 +111,15 @@ export default class PullRequests {
     }
 
     // If the skip-ci label is present, skip the trigger unless it came from a comment
-    if (context.type !== PullRequestEventTriggerType.Comment && prConfig.skip_ci_label && context.pullRequest.labels?.length) {
+    if (context.type !== PullRequestEventTriggerType.Comment && prConfig.skip_ci_labels.length && context.pullRequest.labels?.length) {
       const prLabels = context.pullRequest.labels.map((l) => l.name);
-      if (prLabels.includes(prConfig.skip_ci_label)) {
-        context.log(`Skipping '${prConfig.pipelineSlug}' because skip label '${prConfig.skip_ci_label}' is present`);
 
-        return false;
+      for (const skipCiLabel of prConfig.skip_ci_labels) {
+        if (prLabels.includes(skipCiLabel)) {
+          context.log(`Skipping '${prConfig.pipelineSlug}' because skip label '${prConfig.skip_ci_label}' is present`);
+
+          return false;
+        }
       }
     }
 

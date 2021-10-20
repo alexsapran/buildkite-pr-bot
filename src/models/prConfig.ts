@@ -19,7 +19,8 @@ export class PrConfig {
 
   always_trigger_comment_regex = '';
 
-  skip_ci_label = 'skip-ci';
+  skip_ci_label = ''; // for backwards compatibility with old version
+  skip_ci_labels: Array<string> = ['skip-ci'];
 
   set_commit_status = false;
   commit_status_context = '';
@@ -27,6 +28,11 @@ export class PrConfig {
   constructor(config: PrConfig = null) {
     if (config) {
       Object.assign(this, config);
+
+      // Just for backwards compatibility
+      if (config.skip_ci_label) {
+        this.skip_ci_labels = [config.skip_ci_label];
+      }
     }
   }
 }
