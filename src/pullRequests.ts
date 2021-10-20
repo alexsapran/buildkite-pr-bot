@@ -110,6 +110,10 @@ export default class PullRequests {
       return false;
     }
 
+    if (prConfig.skip_target_branches?.length && prConfig.skip_target_branches.includes(context.pullRequest.base.ref)) {
+      return false;
+    }
+
     // If the skip-ci label is present, skip the trigger unless it came from a comment
     if (context.type !== PullRequestEventTriggerType.Comment && prConfig.skip_ci_labels.length && context.pullRequest.labels?.length) {
       const prLabels = context.pullRequest.labels.map((l) => l.name);

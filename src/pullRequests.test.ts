@@ -304,6 +304,17 @@ describe('pullRequests', () => {
       expect(pr.triggerBuild).toHaveBeenCalled();
     });
 
+    it('should not trigger a build if target branch matchges a skip branch', async () => {
+      mocks.PR.base.ref = 'skip-branch';
+
+      const prConfig = createPrConfig({
+        skip_target_branches: ['skip-branch'],
+      });
+
+      const { pr } = await doContextTest({}, [prConfig]);
+      expect(pr.triggerBuild).not.toHaveBeenCalled();
+    });
+
     it('should not trigger a build if the skip-ci label is present', async () => {
       mocks.PR.labels = [
         {

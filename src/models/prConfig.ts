@@ -22,6 +22,8 @@ export class PrConfig {
   skip_ci_label = ''; // for backwards compatibility with old version
   skip_ci_labels: Array<string> = ['skip-ci'];
 
+  skip_target_branches: Array<string> = [];
+
   set_commit_status = false;
   commit_status_context = '';
 
