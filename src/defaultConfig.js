@@ -4,7 +4,7 @@ module.exports = {
       owner: 'elastic',
       repo: 'kibana',
 
-      configBranch: 'master',
+      configBranch: 'main',
       configPath: '.buildkite/pull_requests.json',
     },
     {
