@@ -1,4 +1,4 @@
-import { Octokit } from '@octokit/rest';
+import { Octokit, RestEndpointMethodTypes } from '@octokit/rest';
 import { parseComment } from './lib/parseComment';
 import { PrConfig } from './models/prConfig';
 import PullRequestEventContext, { PullRequestEventTriggerType } from './models/pullRequestEventContext';
@@ -64,12 +64,75 @@ export default class PullRequests {
     }
   };
 
+  // This was adapted from kibana-buildkite-library
+  areChangesSkippable = (
+    skippablePaths: RegExp[],
+    requiredPaths: RegExp[] = [],
+    prChanges: null | RestEndpointMethodTypes['pulls']['listFiles']['response']['data'] = null
+  ) => {
+    if (requiredPaths?.length) {
+      const someFilesMatchRequired = requiredPaths.some((path) =>
+        prChanges.some((change) => change.filename.match(path) || change.previous_filename?.match(path))
+      );
+
+      if (someFilesMatchRequired) {
+        return false;
+      }
+    }
+
+    const someFilesNotSkippable = prChanges.some(
+      (change) =>
+        !skippablePaths.some((path) => change.filename.match(path) && (!change.previous_filename || change.previous_filename.match(path)))
+    );
+
+    return !someFilesNotSkippable;
+  };
+
+  shouldSkipCi = async (prConfig: PrConfig, context: PullRequestEventContext) => {
+    const { pullRequest } = context;
+
+    if (context.type === PullRequestEventTriggerType.Create || context.type === PullRequestEventTriggerType.Update) {
+      if (prConfig.skip_ci_on_only_changed?.length > 0 && pullRequest.changed_files < 1000) {
+        const changedFiles = await this.github.paginate(this.github.pulls.listFiles, {
+          owner: context.owner,
+          repo: context.repo,
+          pull_number: pullRequest.number,
+          per_page: 100,
+        });
+
+        const skipRegexes = prConfig.skip_ci_on_only_changed.map((regex) => new RegExp(regex, 'i'));
+        const requiredRegexes = prConfig.always_require_ci_on_changed?.map((regex) => new RegExp(regex, 'i'));
+
+        return this.areChangesSkippable(skipRegexes, requiredRegexes, changedFiles);
+      }
+    }
+
+    return false;
+  };
+
+  triggerBuildOrSkipCi = async (prConfig: PrConfig, context: PullRequestEventContext) => {
+    const shouldSkipCi = await this.shouldSkipCi(prConfig, context);
+    if (shouldSkipCi) {
+      context.log('Skipping CI because all changed files matched skipCiOnOnlyChanged regexes');
+      if (prConfig.set_commit_status) {
+        await this.github.repos.createCommitStatus({
+          owner: context.owner,
+          repo: context.repo,
+          sha: context.pullRequest.head.sha,
+          state: 'success',
+          description: 'No changes required CI. Skipped.',
+          context: prConfig.commit_status_context,
+        });
+      }
+
+      return;
+    }
+
+    await this.triggerBuildkiteBuild(prConfig, context);
+  };
+
   triggerBuild = async (prConfig: PrConfig, context: PullRequestEventContext) => {
     const buildStatus = await this.triggerBuildkiteBuild(prConfig, context);
-
-    // if (prConfig.cancel_in_progress_builds_on_update) {
-    //   await this.cancelStaleBuilds(prConfig, context, buildStatus.number);
-    // }
 
     if (prConfig.set_commit_status && prConfig.commit_status_context) {
       try {
@@ -203,12 +266,12 @@ export default class PullRequests {
 
     if (prConfig.allow_org_users) {
       try {
-        const resp = await this.github.orgs.checkMembershipForUser({
+        const resp = (await this.github.orgs.checkMembershipForUser({
           org: 'elastic',
           username: user,
-        });
+        })) as any;
 
-        if (resp.status === 204) {
+        if (resp?.status === 204) {
           return true;
         }
       } catch (ex) {
@@ -235,7 +298,7 @@ export default class PullRequests {
       try {
         if ((await this.checkGeneralTrigger(job, context)) || (await this.checkCommentAlwaysTrigger(job, context))) {
           if (await this.checkUserCanTrigger(job, context)) {
-            await this.triggerBuild(job, context);
+            await this.triggerBuildOrSkipCi(job, context);
           }
         }
       } catch (ex) {

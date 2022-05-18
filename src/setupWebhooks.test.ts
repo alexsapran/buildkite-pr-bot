@@ -16,28 +16,30 @@ let githubMock: Octokit;
 let webhooks: Webhooks;
 let pullRequestsMock: jest.Mocked<PullRequests>;
 
-jest.useFakeTimers();
+jest.useFakeTimers('legacy');
 
 function mockOctokit(octokitMock: any): Octokit {
   return octokitMock as Octokit;
 }
 
 // https://github.com/facebook/jest/issues/10602#issuecomment-791182939
-const autoAdvanceTimers = <Result>(callback: () => Promise<Result>) => async () => {
-  const promise = callback();
-  let resolved = false;
-  promise.then(() => {
-    resolved = true;
-  });
-  while (!resolved) {
-    await new Promise(setImmediate);
-    if (jest.getTimerCount() === 0) {
-      break;
+const autoAdvanceTimers =
+  <Result>(callback: () => Promise<Result>) =>
+  async () => {
+    const promise = callback();
+    let resolved = false;
+    promise.then(() => {
+      resolved = true;
+    });
+    while (!resolved) {
+      await new Promise(setImmediate);
+      if (jest.getTimerCount() === 0) {
+        break;
+      }
+      jest.advanceTimersToNextTimer();
     }
-    jest.advanceTimersToNextTimer();
-  }
-  return await promise;
-};
+    return await promise;
+  };
 
 describe('setupWebhooks', () => {
   beforeEach(async () => {

@@ -50,6 +50,7 @@ const createMocks = () => {
           name: 'label_2',
         },
       ],
+      changed_files: 5,
     } as RestEndpointMethodTypes['pulls']['get']['response']['data'],
     PR_CONFIG: new PrConfig({
       pipelineSlug: 'pipeline-slug',
@@ -198,11 +199,11 @@ describe('pullRequests', () => {
         commit: '123456789',
       }));
 
-      githubMock.repos.createCommitStatus = (jest.fn(() => {
+      githubMock.repos.createCommitStatus = jest.fn(() => {
         return {
           status: 204,
         };
-      }) as any) as jest.MockedFunction<typeof githubMock.repos.createCommitStatus>;
+      }) as any as jest.MockedFunction<typeof githubMock.repos.createCommitStatus>;
 
       await pr.triggerBuild(mocks.PR_CONFIG, contextMock);
 
@@ -219,6 +220,70 @@ describe('pullRequests', () => {
           "target_url": "http://localhost:1234/web_url",
         }
       `);
+    });
+  });
+
+  describe('shouldSkipCi', () => {
+    beforeEach(() => {
+      githubMock.paginate = jest.fn((endpoint) => {
+        if (endpoint?.endpoint?.DEFAULTS?.url === '/repos/{owner}/{repo}/pulls/{pull_number}/files') {
+          return [{ filename: 'test.md' }, { filename: 'x-pack/README.md' }, { filename: 'docs/a_file.txt' }];
+        }
+
+        throw new Error('Endpoint not implemented in mock');
+      }) as any as jest.MockedFunction<typeof githubMock.paginate>;
+    });
+
+    it('should not skip CI with no skip config', async () => {
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+      const pr = new PullRequests(githubMock, buildkiteMock);
+      const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
+      expect(shouldSkipCi).toBe(false);
+    });
+
+    it('should skip CI if all files match', async () => {
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+      const pr = new PullRequests(githubMock, buildkiteMock);
+      mocks.PR_CONFIG.skip_ci_on_only_changed = ['^docs/', '\\.md$'];
+      const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
+      expect(shouldSkipCi).toBe(true);
+    });
+
+    it('should not skip CI if some files do not match', async () => {
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+      const pr = new PullRequests(githubMock, buildkiteMock);
+      mocks.PR_CONFIG.skip_ci_on_only_changed = ['\\.md$'];
+      const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
+      expect(shouldSkipCi).toBe(false);
+    });
+
+    it('should not skip CI if something matches a required file', async () => {
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+      const pr = new PullRequests(githubMock, buildkiteMock);
+      mocks.PR_CONFIG.skip_ci_on_only_changed = ['^docs/', '\\.md$'];
+      mocks.PR_CONFIG.always_require_ci_on_changed = ['^x-pack/README.md$'];
+      const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
+      expect(shouldSkipCi).toBe(false);
     });
   });
 
@@ -244,7 +309,7 @@ describe('pullRequests', () => {
       getConfigsMock.mockResolvedValueOnce(prConfigs);
 
       const pr = new PullRequests(githubMock, buildkiteMock);
-      pr.triggerBuild = jest.fn();
+      pr.triggerBuildOrSkipCi = jest.fn();
 
       await pr.handleContext(context);
 
@@ -256,7 +321,7 @@ describe('pullRequests', () => {
 
     it('should trigger a build with a simple PR creation event', async () => {
       const { pr } = await doContextTest({ type: PullRequestEventTriggerType.Create });
-      expect(pr.triggerBuild).toHaveBeenCalled();
+      expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
     });
 
     it('should trigger multiple builds for a simple PR creation event', async () => {
@@ -265,7 +330,7 @@ describe('pullRequests', () => {
         createPrConfig(),
         createPrConfig(),
       ]);
-      expect(pr.triggerBuild).toHaveBeenCalledTimes(3);
+      expect(pr.triggerBuildOrSkipCi).toHaveBeenCalledTimes(3);
     });
 
     it('should not trigger a build if the build is disabled', async () => {
@@ -274,7 +339,7 @@ describe('pullRequests', () => {
       });
 
       const { pr } = await doContextTest({}, [prConfig]);
-      expect(pr.triggerBuild).not.toHaveBeenCalled();
+      expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
     });
 
     it('should not trigger a build if the build is set to not build on commit', async () => {
@@ -283,7 +348,7 @@ describe('pullRequests', () => {
       });
 
       const { pr } = await doContextTest({}, [prConfig]);
-      expect(pr.triggerBuild).not.toHaveBeenCalled();
+      expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
     });
 
     it('should not trigger a build if target branch does not match', async () => {
@@ -292,7 +357,7 @@ describe('pullRequests', () => {
       });
 
       const { pr } = await doContextTest({}, [prConfig]);
-      expect(pr.triggerBuild).not.toHaveBeenCalled();
+      expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
     });
 
     it('should trigger a build if no target branch is required', async () => {
@@ -301,7 +366,7 @@ describe('pullRequests', () => {
       });
 
       const { pr } = await doContextTest({ type: PullRequestEventTriggerType.Create });
-      expect(pr.triggerBuild).toHaveBeenCalled();
+      expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
     });
 
     it('should not trigger a build if target branch matchges a skip branch', async () => {
@@ -312,7 +377,7 @@ describe('pullRequests', () => {
       });
 
       const { pr } = await doContextTest({}, [prConfig]);
-      expect(pr.triggerBuild).not.toHaveBeenCalled();
+      expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
     });
 
     it('should not trigger a build if the skip-ci label is present', async () => {
@@ -327,7 +392,7 @@ describe('pullRequests', () => {
       });
 
       const { pr } = await doContextTest({}, [prConfig]);
-      expect(pr.triggerBuild).not.toHaveBeenCalled();
+      expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
     });
 
     it('should not trigger a build if a skip-ci label is present', async () => {
@@ -342,7 +407,7 @@ describe('pullRequests', () => {
       });
 
       const { pr } = await doContextTest({}, [prConfig]);
-      expect(pr.triggerBuild).not.toHaveBeenCalled();
+      expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
     });
 
     describe('with a comment event', () => {
@@ -360,7 +425,7 @@ describe('pullRequests', () => {
           [createPrConfig()]
         );
 
-        expect(pr.triggerBuild).toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
         expect(context.parsedComment.comment).toBe('buildkite build this');
       });
 
@@ -384,7 +449,7 @@ describe('pullRequests', () => {
           [createPrConfig({ skip_ci_label: 'skip-me' })]
         );
 
-        expect(pr.triggerBuild).toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
         expect(context.parsedComment.comment).toBe('buildkite build this');
       });
 
@@ -402,7 +467,7 @@ describe('pullRequests', () => {
           [createPrConfig({ build_on_comment: false })]
         );
 
-        expect(pr.triggerBuild).not.toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
       });
 
       it('should not trigger for an invalid comment', async () => {
@@ -419,7 +484,7 @@ describe('pullRequests', () => {
           [createPrConfig()]
         );
 
-        expect(pr.triggerBuild).not.toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
       });
 
       it('should not trigger for an invalid user', async () => {
@@ -436,7 +501,7 @@ describe('pullRequests', () => {
           [createPrConfig()]
         );
 
-        expect(pr.triggerBuild).not.toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
       });
 
       it('should trigger if the always trigger comment matches, even if other general requirements are invalid', async () => {
@@ -453,7 +518,7 @@ describe('pullRequests', () => {
           [createPrConfig({ labels: ['invalid-label'], always_trigger_comment_regex: 'build this or else' })]
         );
 
-        expect(pr.triggerBuild).toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
       });
     });
 
@@ -464,7 +529,7 @@ describe('pullRequests', () => {
         });
 
         const { pr } = await doContextTest({ type: PullRequestEventTriggerType.Create }, [prConfig]);
-        expect(pr.triggerBuild).toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
       });
 
       it('should not trigger a build if PR is missing the correct labels', async () => {
@@ -473,7 +538,7 @@ describe('pullRequests', () => {
         });
 
         const { pr } = await doContextTest({ type: PullRequestEventTriggerType.Create }, [prConfig]);
-        expect(pr.triggerBuild).not.toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
       });
     });
 
@@ -486,14 +551,14 @@ describe('pullRequests', () => {
           allowed_list: null,
         });
 
-        githubMock.orgs.checkMembershipForUser = (jest.fn(() => {
+        githubMock.orgs.checkMembershipForUser = jest.fn(() => {
           return {
             status: 204,
           };
-        }) as any) as jest.MockedFunction<typeof githubMock.orgs.checkMembershipForUser>;
+        }) as any as jest.MockedFunction<typeof githubMock.orgs.checkMembershipForUser>;
 
         const { pr } = await doContextTest({ type: PullRequestEventTriggerType.Create }, [prConfig]);
-        expect(pr.triggerBuild).toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
       });
 
       it('should not trigger a build if user not part of specified org', async () => {
@@ -502,14 +567,14 @@ describe('pullRequests', () => {
           allowed_list: null,
         });
 
-        githubMock.orgs.checkMembershipForUser = (jest.fn(() => {
+        githubMock.orgs.checkMembershipForUser = jest.fn(() => {
           return {
             status: 304,
           };
-        }) as any) as jest.MockedFunction<typeof githubMock.orgs.checkMembershipForUser>;
+        }) as any as jest.MockedFunction<typeof githubMock.orgs.checkMembershipForUser>;
 
         const { pr } = await doContextTest({ type: PullRequestEventTriggerType.Create }, [prConfig]);
-        expect(pr.triggerBuild).not.toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
       });
 
       it('should trigger a build if user has appropriate repo permissions', async () => {
@@ -518,16 +583,16 @@ describe('pullRequests', () => {
           allowed_list: null,
         });
 
-        githubMock.repos.getCollaboratorPermissionLevel = (jest.fn(() => {
+        githubMock.repos.getCollaboratorPermissionLevel = jest.fn(() => {
           return {
             data: {
               permission: 'write',
             },
           };
-        }) as any) as jest.MockedFunction<typeof githubMock.repos.getCollaboratorPermissionLevel>;
+        }) as any as jest.MockedFunction<typeof githubMock.repos.getCollaboratorPermissionLevel>;
 
         const { pr } = await doContextTest({ type: PullRequestEventTriggerType.Create }, [prConfig]);
-        expect(pr.triggerBuild).toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
       });
 
       it('should not trigger a build if user does not have appropriate repo permissions', async () => {
@@ -536,16 +601,16 @@ describe('pullRequests', () => {
           allowed_list: null,
         });
 
-        githubMock.repos.getCollaboratorPermissionLevel = (jest.fn(() => {
+        githubMock.repos.getCollaboratorPermissionLevel = jest.fn(() => {
           return {
             data: {
               permission: 'write',
             },
           };
-        }) as any) as jest.MockedFunction<typeof githubMock.repos.getCollaboratorPermissionLevel>;
+        }) as any as jest.MockedFunction<typeof githubMock.repos.getCollaboratorPermissionLevel>;
 
         const { pr } = await doContextTest({ type: PullRequestEventTriggerType.Create }, [prConfig]);
-        expect(pr.triggerBuild).not.toHaveBeenCalled();
+        expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
       });
     });
   });

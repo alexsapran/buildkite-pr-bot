@@ -27,6 +27,9 @@ export class PrConfig {
   set_commit_status = false;
   commit_status_context = '';
 
+  skip_ci_on_only_changed: Array<string> = [];
+  always_require_ci_on_changed: Array<string> = [];
+
   constructor(config: PrConfig = null) {
     if (config) {
       Object.assign(this, config);

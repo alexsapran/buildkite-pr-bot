@@ -1,9 +1,9 @@
-const Cache = require('./cache').default;
+import Cache from './cache';
 
-jest.useFakeTimers();
+jest.useFakeTimers('legacy');
 
 describe('cache', () => {
-  let cache;
+  let cache: Cache;
 
   beforeEach(() => {
     cache = new Cache();

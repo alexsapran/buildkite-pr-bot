@@ -6,7 +6,7 @@
   "scripts": {
     "build": "rm -rf build && tsc --project ./",
     "build:docker": "docker build -t elastic-buildkite-pr-bot:local .",
-    "start": "ts-node src/index.ts",
+    "start": "node -r @swc-node/register src/index.ts",
     "test": "jest --coverage --no-cache",
     "test:watch": "jest --watch",
     "watch": "nodemon src/index.ts"
@@ -15,7 +15,7 @@
   "dependencies": {
     "@elastic/ecs-winston-format": "^0.2.0",
     "@google-cloud/secret-manager": "^3.2.0",
-    "@octokit/rest": "^18.0.9",
+    "@octokit/rest": "^18.12.0",
     "@octokit/webhooks": "^7.15.1",
     "axios": "^0.21.1",
     "dotenv": "^8.2.0",
@@ -23,17 +23,18 @@
     "winston": "^3.3.3"
   },
   "devDependencies": {
+    "@swc-node/register": "^1.5.1",
+    "@swc/core": "^1.2.186",
+    "@swc/jest": "^0.2.21",
     "@types/express": "^4.17.9",
-    "@types/jest": "^26.0.15",
+    "@types/jest": "^27.5.1",
     "@types/node": "^14.14.6",
     "eslint": "^7.11.0",
     "eslint-plugin-jest": "^24.1.0",
     "eventsource": "^1.0.7",
-    "jest": "^26.4.2",
+    "jest": "^27.5.1",
     "nodemon": "^2.0.4",
     "prettier": "^2.1.2",
-    "ts-jest": "^26.4.3",
-    "ts-node": "^9.0.0",
-    "typescript": "^4.0.5"
+    "typescript": "^4.6.4"
   }
 }
