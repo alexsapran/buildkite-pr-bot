@@ -177,3 +177,38 @@ when you comment `buildkite build this`
 
 However, if a user would like to run a one-off instance of the "maps" CI on a
 different PR, they can still comment with `buildkite run maps ci`
+
+**set_commit_status**
+
+- Sets a github commit status of `pending` when the build is triggered. `commit_status_context` must also be set.
+- Values: true or false
+- Default: false
+
+**commit_status_context**
+
+- The github commit status context to use when setting commit statuses.
+- Values: `any string`
+- Default: `<empty string>`
+
+**skip_ci_on_only_changed**
+
+- An array of regular expressions for matching changed files in a PR. If all of the files in a PR match at least one regular expression, a build will not be triggered.
+  If `set_commit_status` is set to `true`, it will set a commit status of `success`.
+- Value: Array of
+  [JavaScript-style](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions)
+  regular expressions
+- Default: `[]`
+
+**always_require_ci_on_changed**
+
+- An array of regular expressions for changed files that must always trigger CI. This is used to create exceptions to the rules set in `skip_ci_on_only_changed`.
+- Value: Array of
+  [JavaScript-style](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions)
+  regular expressions
+- Default: `[]`
+
+As a concrete example:
+
+You have `skip_ci_on_only_changed` set to `["\\.md$"]` to skip CI for PRs that only change documentation files.
+
+You could have `always_require_ci_on_changed` set to `["^some/important/directory/.+\\.md$"]` to ensure that CI is always triggered for PRs that change documentation files in `some/important/directory`.
