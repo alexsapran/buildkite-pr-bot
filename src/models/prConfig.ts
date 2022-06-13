@@ -9,8 +9,8 @@ export class PrConfig {
   // cancel_in_progress_builds_on_update = false; // TODO we can likely remove this and rely on Buildkite's Pipeline settings
   enabled = false;
 
-  allowed_repo_permissions?: Array<string>;
-  allowed_list?: Array<string>;
+  allowed_repo_permissions?: null | Array<string>;
+  allowed_list?: null | Array<string>;
 
   target_branch = '';
   trigger_comment_regex = '^(?:(?:buildkite\\W+)?(?:build|test)\\W+(?:this|it))|^retest$';
@@ -29,6 +29,8 @@ export class PrConfig {
 
   skip_ci_on_only_changed: Array<string> = [];
   always_require_ci_on_changed: Array<string> = [];
+
+  kibana_versions_check = false;
 
   constructor(config: PrConfig = null) {
     if (config) {

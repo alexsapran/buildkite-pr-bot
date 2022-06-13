@@ -4,6 +4,7 @@ import { PrConfig } from './models/prConfig';
 import PullRequestEventContext, { PullRequestEventTriggerType } from './models/pullRequestEventContext';
 import Buildkite from './buildkite';
 import getConfigs from './config';
+import getFileFromRepo from './lib/getFileFromRepo';
 
 export default class PullRequests {
   github: Octokit;
@@ -128,7 +129,40 @@ export default class PullRequests {
       return;
     }
 
+    const skippedForOldBranch = await this.maybeSkipForOldBranch(prConfig, context);
+    if (skippedForOldBranch) {
+      return;
+    }
+
     await this.triggerBuildkiteBuild(prConfig, context);
+  };
+
+  maybeSkipForOldBranch = async (prConfig: PrConfig, context: PullRequestEventContext) => {
+    const targetBranch = context.pullRequest.base.ref;
+    if (prConfig.kibana_versions_check && targetBranch !== 'main') {
+      const versionsJson = await getFileFromRepo(this.github, context.owner, context.repo, 'main', 'versions.json');
+      const { versions } = JSON.parse(versionsJson);
+      if (!versions.some((version) => version.branch === targetBranch)) {
+        context.log(`Skipping CI because branch ${targetBranch} is not in versions.json`);
+
+        const commentBody = [
+          `CI was triggered for this PR, but this PR targets ${targetBranch} which should not receive a future release. CI is not supported for these branches. Please consult the release schedule, or contact \`#kibana-operations\` if you believe this is an error.`,
+          '',
+          'The following branches are currently considered to be open:',
+          ...versions.map((version) => `* ${version.branch}`),
+        ];
+
+        await this.github.issues.createComment({
+          owner: context.owner,
+          repo: context.repo,
+          issue_number: context.pullRequest.number,
+          body: commentBody.join('\n'),
+        });
+        return true;
+      }
+    }
+
+    return false;
   };
 
   triggerBuild = async (prConfig: PrConfig, context: PullRequestEventContext) => {

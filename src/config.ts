@@ -1,6 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import { components } from '@octokit/openapi-types';
 import { PrConfig } from './models/prConfig';
+import getFileFromRepo from './lib/getFileFromRepo';
 
 type GetRepoContentResponseDataFile = components['schemas']['content-file'];
 
@@ -27,25 +28,13 @@ export default async function getConfigs(repoOwner: string, repoName: string, gi
     return null;
   }
 
-  const request = {
-    owner: repoConfig.configOwner || repoConfig.owner,
-    repo: repoConfig.configRepo || repoConfig.repo,
-    ref: repoConfig.configBranch || 'main',
-    path: repoConfig.configPath || '.buildkite/pull-requests.json',
-  };
-
-  const response = await github.repos.getContent(request);
-
-  const { data } = response;
-
-  if (Array.isArray(data)) {
-    throw new Error(`Expected ${request.owner}/${request.repo}/${request.ref}/${request.path} to be a file, got a directory instead.`);
-  }
-
-  // https://github.com/octokit/rest.js/issues/32#issuecomment-747129857
-  const dataFile = data as GetRepoContentResponseDataFile;
-
-  const json = Buffer.from(dataFile.content, 'base64').toString();
+  const json = await getFileFromRepo(
+    github,
+    repoConfig.configOwner || repoConfig.owner,
+    repoConfig.configRepo || repoConfig.repo,
+    repoConfig.configBranch || 'main',
+    repoConfig.configPath || '.buildkite/pull-requests.json'
+  );
   const parsed = JSON.parse(json);
 
   if (parsed?.jobs) {

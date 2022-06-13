@@ -60,6 +60,16 @@ const createMocks = () => {
   };
 };
 
+const mockGithubGetContent = (githubMock: Octokit, data: Object) => {
+  const content = Buffer.from(JSON.stringify(data)).toString('base64');
+
+  githubMock.repos.getContent = jest.fn(() => {
+    return {
+      data: { content },
+    };
+  }) as any as jest.MockedFunction<typeof githubMock.repos.getContent>;
+};
+
 describe('pullRequests', () => {
   let mocks = createMocks();
   let buildkiteMock = new BuildkiteMock();
@@ -71,6 +81,8 @@ describe('pullRequests', () => {
     githubMock = new OctokitMock();
 
     jest.clearAllMocks();
+
+    mockGithubGetContent(githubMock, { versions: [] });
   });
 
   describe('triggerBuild', () => {
@@ -612,6 +624,95 @@ describe('pullRequests', () => {
         const { pr } = await doContextTest({ type: PullRequestEventTriggerType.Create }, [prConfig]);
         expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
       });
+    });
+  });
+
+  describe('maybeSkipForOldBranch', () => {
+    beforeEach(() => {
+      mockGithubGetContent(githubMock, {
+        versions: [
+          {
+            version: '8.4.0',
+            branch: 'main',
+            currentMajor: true,
+            currentMinor: true,
+          },
+          {
+            version: '8.3.0',
+            branch: '8.3',
+            currentMajor: true,
+            previousMinor: true,
+          },
+          {
+            version: '8.2.2',
+            branch: '8.2',
+            currentMajor: true,
+          },
+          {
+            version: '7.17.5',
+            branch: '7.17',
+            previousMajor: true,
+          },
+        ],
+      });
+
+      mocks.PR_CONFIG.kibana_versions_check = true;
+      githubMock.issues.createComment = jest.fn() as any as jest.MockedFunction<typeof githubMock.issues.createComment>;
+    });
+
+    it('should not skip main', async () => {
+      mocks.PR.base.ref = 'main';
+
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+
+      const pr = new PullRequests(githubMock, buildkiteMock);
+      const didSkip = await pr.maybeSkipForOldBranch(mocks.PR_CONFIG, contextMock);
+      expect(didSkip).toBe(false);
+    });
+
+    it('should not skip a branch that exists in versions.json', async () => {
+      mocks.PR.base.ref = '8.3';
+
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+
+      const pr = new PullRequests(githubMock, buildkiteMock);
+      const didSkip = await pr.maybeSkipForOldBranch(mocks.PR_CONFIG, contextMock);
+      expect(didSkip).toBe(false);
+    });
+
+    it('should skip a branch that does not exist in versions.json', async () => {
+      mocks.PR.base.ref = '8.1';
+
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+
+      const pr = new PullRequests(githubMock, buildkiteMock);
+      const didSkip = await pr.maybeSkipForOldBranch(mocks.PR_CONFIG, contextMock);
+      expect(didSkip).toBe(true);
+
+      expect(githubMock.issues.createComment.mock.calls[0][0].body).toMatchInlineSnapshot(`
+        "CI was triggered for this PR, but this PR targets 8.1 which should not receive a future release. CI is not supported for these branches. Please consult the release schedule, or contact \`#kibana-operations\` if you believe this is an error.
+
+        The following branches are currently considered to be open:
+        * main
+        * 8.3
+        * 8.2
+        * 7.17"
+      `);
     });
   });
 });
