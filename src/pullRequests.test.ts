@@ -675,7 +675,7 @@ describe('pullRequests', () => {
       expect(didSkip).toBe(false);
     });
 
-    it('should not skip a branch that exists in versions.json', async () => {
+    it('should not skip a release branch that exists in versions.json', async () => {
       mocks.PR.base.ref = '8.3';
 
       const contextMock = new PullRequestEventContext({
@@ -690,7 +690,22 @@ describe('pullRequests', () => {
       expect(didSkip).toBe(false);
     });
 
-    it('should skip a branch that does not exist in versions.json', async () => {
+    it('should not skip a branch does not look like a version number', async () => {
+      mocks.PR.base.ref = 'feature-branch';
+
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+
+      const pr = new PullRequests(githubMock, buildkiteMock);
+      const didSkip = await pr.maybeSkipForOldBranch(mocks.PR_CONFIG, contextMock);
+      expect(didSkip).toBe(false);
+    });
+
+    it('should skip a release branch that does not exist in versions.json', async () => {
       mocks.PR.base.ref = '8.1';
 
       const contextMock = new PullRequestEventContext({

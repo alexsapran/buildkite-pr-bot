@@ -139,7 +139,7 @@ export default class PullRequests {
 
   maybeSkipForOldBranch = async (prConfig: PrConfig, context: PullRequestEventContext) => {
     const targetBranch = context.pullRequest.base.ref;
-    if (prConfig.kibana_versions_check && targetBranch !== 'main') {
+    if (prConfig.kibana_versions_check && targetBranch.match(/^[0-9]+\.[0-9]+$/)) {
       const versionsJson = await getFileFromRepo(this.github, context.owner, context.repo, 'main', 'versions.json');
       const { versions } = JSON.parse(versionsJson);
       if (!versions.some((version) => version.branch === targetBranch)) {
