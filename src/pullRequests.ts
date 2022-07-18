@@ -96,7 +96,7 @@ export default class PullRequests {
     }
 
     if (prConfig.kibana_build_reuse) {
-      if (!prConfig.kibana_build_reuse_users.length || prConfig.kibana_build_reuse_users.includes(context.pullRequest.user.login)) {
+      if (!prConfig.kibana_build_reuse_label || pullRequest.labels.some((l) => l.name === prConfig.kibana_build_reuse_label)) {
         const reusableBuild = await this.getPossibleReusableBuildJob(prConfig, context);
         if (reusableBuild) {
           buildParams['KIBANA_BUILD_ID'] = reusableBuild.build.id;

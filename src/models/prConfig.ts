@@ -33,7 +33,7 @@ export class PrConfig {
   kibana_build_reuse = false;
   kibana_build_reuse_pipeline_slugs: string[] = [];
   kibana_build_reuse_regexes: Array<string> = [];
-  kibana_build_reuse_users: Array<string> = [];
+  kibana_build_reuse_label = '';
 
   kibana_versions_check = false;
 
