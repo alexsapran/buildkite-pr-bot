@@ -6,6 +6,8 @@ import Buildkite from './buildkite';
 import { PrConfig } from './models/prConfig';
 import PullRequestEventContext, { PullRequestEventContextData, PullRequestEventTriggerType } from './models/pullRequestEventContext';
 import getConfigs from './config';
+import { BuildkiteIngestData, JobFromIngest } from './buildkiteIngestData';
+import { Client } from '@elastic/elasticsearch';
 
 const BuildkiteMock = Buildkite as jest.Mocked<typeof Buildkite>;
 const OctokitMock = Octokit as jest.Mocked<typeof Octokit>;
@@ -70,19 +72,41 @@ const mockGithubGetContent = (githubMock: Octokit, data: Object) => {
   }) as any as jest.MockedFunction<typeof githubMock.repos.getContent>;
 };
 
+const mockGithubListCommits = (githubMock: Octokit, data: Object) => {
+  githubMock.repos.listCommits = jest.fn(() => {
+    return {
+      data: data,
+    };
+  }) as any as jest.MockedFunction<typeof githubMock.repos.listCommits>;
+};
+
 describe('pullRequests', () => {
   let mocks = createMocks();
   let buildkiteMock = new BuildkiteMock();
   let githubMock = new OctokitMock();
+  let esMock: Client;
+  let buildkiteIngestDataMock;
 
   beforeEach(() => {
     mocks = createMocks();
     buildkiteMock = new BuildkiteMock();
     githubMock = new OctokitMock();
+    esMock = {} as Client;
+    buildkiteIngestDataMock = new BuildkiteIngestData(esMock);
 
     jest.clearAllMocks();
 
     mockGithubGetContent(githubMock, { versions: [] });
+    mockGithubListCommits(githubMock, []);
+    githubMock.repos.compareCommitsWithBasehead = jest.fn() as any;
+
+    esMock.search = (() => {
+      return {
+        hits: {
+          hits: [],
+        },
+      };
+    }) as any;
   });
 
   describe('triggerBuild', () => {
@@ -94,7 +118,7 @@ describe('pullRequests', () => {
         type: PullRequestEventTriggerType.Update,
       });
 
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       buildkiteMock.triggerBuild = jest.fn(async () => ({
         id: 'build-id',
         number: 123,
@@ -151,7 +175,7 @@ describe('pullRequests', () => {
         parsedComment: comment,
       });
 
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       buildkiteMock.triggerBuild = jest.fn(async () => ({
         id: 'build-id',
         number: 123,
@@ -200,7 +224,7 @@ describe('pullRequests', () => {
         type: PullRequestEventTriggerType.Update,
       });
 
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       buildkiteMock.triggerBuild = jest.fn(async () => ({
         id: 'build-id',
         number: 123,
@@ -253,7 +277,7 @@ describe('pullRequests', () => {
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
       });
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
       expect(shouldSkipCi).toBe(false);
     });
@@ -265,7 +289,7 @@ describe('pullRequests', () => {
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
       });
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       mocks.PR_CONFIG.skip_ci_on_only_changed = ['^docs/', '\\.md$'];
       const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
       expect(shouldSkipCi).toBe(true);
@@ -278,7 +302,7 @@ describe('pullRequests', () => {
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
       });
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       mocks.PR_CONFIG.skip_ci_on_only_changed = ['\\.md$'];
       const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
       expect(shouldSkipCi).toBe(false);
@@ -291,7 +315,7 @@ describe('pullRequests', () => {
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
       });
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       mocks.PR_CONFIG.skip_ci_on_only_changed = ['^docs/', '\\.md$'];
       mocks.PR_CONFIG.always_require_ci_on_changed = ['^x-pack/README.md$'];
       const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
@@ -320,7 +344,7 @@ describe('pullRequests', () => {
 
       getConfigsMock.mockResolvedValueOnce(prConfigs);
 
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       pr.triggerBuildOrSkipCi = jest.fn();
 
       await pr.handleContext(context);
@@ -670,7 +694,7 @@ describe('pullRequests', () => {
         type: PullRequestEventTriggerType.Update,
       });
 
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       const didSkip = await pr.maybeSkipForOldBranch(mocks.PR_CONFIG, contextMock);
       expect(didSkip).toBe(false);
     });
@@ -685,7 +709,7 @@ describe('pullRequests', () => {
         type: PullRequestEventTriggerType.Update,
       });
 
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       const didSkip = await pr.maybeSkipForOldBranch(mocks.PR_CONFIG, contextMock);
       expect(didSkip).toBe(false);
     });
@@ -700,7 +724,7 @@ describe('pullRequests', () => {
         type: PullRequestEventTriggerType.Update,
       });
 
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       const didSkip = await pr.maybeSkipForOldBranch(mocks.PR_CONFIG, contextMock);
       expect(didSkip).toBe(false);
     });
@@ -715,7 +739,7 @@ describe('pullRequests', () => {
         type: PullRequestEventTriggerType.Update,
       });
 
-      const pr = new PullRequests(githubMock, buildkiteMock);
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
       const didSkip = await pr.maybeSkipForOldBranch(mocks.PR_CONFIG, contextMock);
       expect(didSkip).toBe(true);
 
@@ -728,6 +752,249 @@ describe('pullRequests', () => {
         * 8.2
         * 7.17"
       `);
+    });
+  });
+
+  describe('getCommitsForBuildReuseCompare', () => {
+    it('return 10 commits from base and target', async () => {
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+
+      mockGithubListCommits(
+        githubMock,
+        [
+          'TARGET_SHA_12',
+          'TARGET_SHA_11',
+          'TARGET_SHA_10',
+          'TARGET_SHA_9',
+          'TARGET_SHA_8',
+          'TARGET_SHA_7',
+          'TARGET_SHA_6',
+          'TARGET_SHA_5',
+          'TARGET_SHA_4',
+          'TARGET_SHA_3',
+          'TARGET_SHA_2',
+          'TARGET_SHA',
+          'PR_SHA_12',
+          'PR_SHA_11',
+          'PR_SHA_10',
+          'PR_SHA_9',
+          'PR_SHA_8',
+          'PR_SHA_7',
+          'PR_SHA_6',
+          'PR_SHA_5',
+          'PR_SHA_4',
+          'PR_SHA_3',
+          'PR_SHA_2',
+          'PR_SHA',
+        ].map((commit) => ({ sha: commit }))
+      );
+
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
+
+      const commits = await pr.getCommitsForBuildReuseCompare(contextMock);
+      expect(commits).toEqual([
+        'TARGET_SHA_10',
+        'TARGET_SHA_9',
+        'TARGET_SHA_8',
+        'TARGET_SHA_7',
+        'TARGET_SHA_6',
+        'TARGET_SHA_5',
+        'TARGET_SHA_4',
+        'TARGET_SHA_3',
+        'TARGET_SHA_2',
+        'TARGET_SHA',
+        'PR_SHA_10',
+        'PR_SHA_9',
+        'PR_SHA_8',
+        'PR_SHA_7',
+        'PR_SHA_6',
+        'PR_SHA_5',
+        'PR_SHA_4',
+        'PR_SHA_3',
+        'PR_SHA_2',
+        'PR_SHA',
+      ]);
+    });
+
+    it('return all commits if fewer than 20', async () => {
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+
+      mockGithubListCommits(
+        githubMock,
+        ['TARGET_SHA', 'PR_SHA_6', 'PR_SHA_5', 'PR_SHA_4', 'PR_SHA_3', 'PR_SHA_2', 'PR_SHA'].map((commit) => ({ sha: commit }))
+      );
+
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
+
+      const commits = await pr.getCommitsForBuildReuseCompare(contextMock);
+      expect(commits).toEqual(['TARGET_SHA', 'PR_SHA_6', 'PR_SHA_5', 'PR_SHA_4', 'PR_SHA_3', 'PR_SHA_2', 'PR_SHA']);
+    });
+  });
+
+  describe('getPossibleReusableBuildJob', () => {
+    const mockData = (commits: string[] = [], builds: Partial<JobFromIngest>[] = [], fileChanges: string[] = []) => {
+      mockGithubListCommits(
+        githubMock,
+        commits.map((commit) => ({ sha: commit }))
+      );
+
+      esMock.search = jest.fn(() => {
+        return {
+          hits: {
+            hits: builds.map((build) => ({
+              _source: build,
+            })),
+          },
+        };
+      }) as any;
+
+      githubMock.repos.compareCommitsWithBasehead = jest.fn(() => {
+        return { data: fileChanges.map((f) => ({ filename: f })) };
+      }) as any;
+    };
+
+    let contextMock: PullRequestEventContext;
+    let pr: PullRequests;
+
+    beforeEach(() => {
+      contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+
+      mocks.PR_CONFIG.skip_ci_on_only_changed = ['\\.md$'];
+      pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
+    });
+
+    it('should return a reusable job if all changes are skippable', async () => {
+      mockData(
+        ['TARGET_SHA', 'PR_SHA'],
+        [
+          {
+            id: 'reusable-id',
+            build: {
+              id: 'reusable-build-id',
+              branch: 'main',
+              commit: 'TARGET_SHA',
+              number: 1,
+            },
+            created_at: '2020-01-01T00:00:00.000Z',
+            state: 'passed',
+          },
+        ],
+        ['README.md']
+      );
+
+      const job = await pr.getPossibleReusableBuildJob(mocks.PR_CONFIG, contextMock);
+      expect(job?.id).toBe('reusable-id');
+    });
+
+    it('should return a reusable job if all changes are skippable or allowed for build reuse', async () => {
+      mocks.PR_CONFIG.kibana_build_reuse_regexes = ['\\.txt$'];
+
+      mockData(
+        ['TARGET_SHA', 'PR_SHA'],
+        [
+          {
+            id: 'reusable-id',
+            build: {
+              id: 'reusable-build-id',
+              branch: 'main',
+              commit: 'TARGET_SHA',
+              number: 1,
+            },
+            created_at: '2020-01-01T00:00:00.000Z',
+            state: 'passed',
+          },
+        ],
+        ['README.md', 'something.txt']
+      );
+
+      const job = await pr.getPossibleReusableBuildJob(mocks.PR_CONFIG, contextMock);
+      expect(job?.id).toBe('reusable-id');
+    });
+
+    it('should return nothing if a change is not allowed for reuse', async () => {
+      mocks.PR_CONFIG.kibana_build_reuse_regexes = ['\\.txt$'];
+
+      mockData(
+        ['TARGET_SHA', 'PR_SHA'],
+        [
+          {
+            id: 'reusable-id',
+            build: {
+              id: 'reusable-build-id',
+              branch: 'main',
+              commit: 'TARGET_SHA',
+              number: 1,
+            },
+            created_at: '2020-01-01T00:00:00.000Z',
+            state: 'passed',
+          },
+        ],
+        ['README.md', 'something.txt', 'package.json']
+      );
+
+      const job = await pr.getPossibleReusableBuildJob(mocks.PR_CONFIG, contextMock);
+      expect(job).toBeFalsy();
+    });
+
+    it('should return the most recent job', async () => {
+      mockData(
+        [
+          'TARGET_SHA',
+          'PR_SHA_10',
+          'PR_SHA_9',
+          'PR_SHA_8',
+          'PR_SHA_7',
+          'PR_SHA_6',
+          'PR_SHA_5',
+          'PR_SHA_4',
+          'PR_SHA_3',
+          'PR_SHA_2',
+          'PR_SHA',
+        ],
+        [
+          {
+            id: 'reusable-id-1',
+            build: {
+              id: 'reusable-build-id-1',
+              branch: 'main',
+              commit: 'TARGET_SHA',
+              number: 1,
+            },
+            created_at: '2020-01-01T00:00:00.000Z',
+            state: 'passed',
+          },
+          {
+            id: 'reusable-id-2',
+            build: {
+              id: 'reusable-build-id-2',
+              branch: 'main',
+              commit: 'PR_SHA_10',
+              number: 2,
+            },
+            created_at: '2020-01-02T00:00:00.000Z',
+            state: 'passed',
+          },
+        ],
+        ['README.md']
+      );
+
+      const job = await pr.getPossibleReusableBuildJob(mocks.PR_CONFIG, contextMock);
+      expect(job?.id).toBe('reusable-id-2');
     });
   });
 });

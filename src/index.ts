@@ -10,6 +10,7 @@ import setupWebhooks from './setupWebhooks';
 import PullRequests from './pullRequests';
 
 import logger from './lib/logger';
+import { BuildkiteIngestData } from './buildkiteIngestData';
 
 (async () => {
   if (process.env.BOOTSTRAP_GCP_SECRETS) {
@@ -26,6 +27,8 @@ import logger from './lib/logger';
 
   const buildkite = new Buildkite();
 
+  const buildkiteIngestData = new BuildkiteIngestData();
+
   if (process.env.DRY_RUN) {
     buildkite.triggerBuild = ((slug, options) => console.log(slug, options)) as typeof buildkite.triggerBuild;
     github.repos.createCommitStatus = ((options) => console.log(options)) as typeof github.repos.createCommitStatus;
@@ -39,7 +42,7 @@ import logger from './lib/logger';
 
   app.listen(process.env.PORT || 3000, () => logger.info('Server started on port 3000'));
 
-  await setupWebhooks(github, new PullRequests(github, buildkite), webhooks);
+  await setupWebhooks(github, new PullRequests(github, buildkite, buildkiteIngestData), webhooks);
 
   logger.info('App started');
 })();

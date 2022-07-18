@@ -30,6 +30,11 @@ export class PrConfig {
   skip_ci_on_only_changed: Array<string> = [];
   always_require_ci_on_changed: Array<string> = [];
 
+  kibana_build_reuse = false;
+  kibana_build_reuse_pipeline_slugs: string[] = [];
+  kibana_build_reuse_regexes: Array<string> = [];
+  kibana_build_reuse_users: Array<string> = [];
+
   kibana_versions_check = false;
 
   constructor(config: PrConfig = null) {

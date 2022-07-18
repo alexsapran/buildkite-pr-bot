@@ -5,15 +5,64 @@ import PullRequestEventContext, { PullRequestEventTriggerType } from './models/p
 import Buildkite from './buildkite';
 import getConfigs from './config';
 import getFileFromRepo from './lib/getFileFromRepo';
+import { BuildkiteIngestData } from './buildkiteIngestData';
 
 export default class PullRequests {
   github: Octokit;
   buildkite: Buildkite;
+  buildkiteIngestData: BuildkiteIngestData;
 
-  constructor(github: Octokit, buildkite: Buildkite) {
+  constructor(github: Octokit, buildkite: Buildkite, buildkiteIngestData: BuildkiteIngestData) {
     this.github = github;
     this.buildkite = buildkite;
+    this.buildkiteIngestData = buildkiteIngestData;
   }
+
+  getCommitsForBuildReuseCompare = async (context: PullRequestEventContext) => {
+    const commits = (
+      await this.github.repos.listCommits({
+        owner: context.owner,
+        repo: context.repo,
+        sha: context.pullRequest.head.sha,
+        per_page: 100,
+      })
+    ).data;
+
+    const baseCommitIndex = commits.findIndex((commit) => commit.sha === context.pullRequest.base.sha);
+    // Only look up to 10 commits back from the base commit
+    let commitsToSearch = commits.slice(Math.max(baseCommitIndex - 9, 0));
+    if (commitsToSearch.length > 20) {
+      // If there's more than 20 commits, then just select 10ish from the base commit, and 10 from the head of the PR (delete everything in the middle)
+      commitsToSearch.splice(10, commitsToSearch.length - 20);
+    }
+
+    return commitsToSearch.map((commit) => commit.sha);
+  };
+
+  getPossibleReusableBuildJob = async (prConfig: PrConfig, context: PullRequestEventContext) => {
+    const commits = await this.getCommitsForBuildReuseCompare(context);
+    const buildJobs = await this.buildkiteIngestData.getBuildJobsForCommits(commits, prConfig.kibana_build_reuse_pipeline_slugs);
+    const lastGreenJob = buildJobs.find((job) => job.state === 'passed');
+
+    if (!lastGreenJob) {
+      return null;
+    }
+
+    const resp = await this.github.repos.compareCommitsWithBasehead({
+      owner: context.owner,
+      repo: context.repo,
+      basehead: `${lastGreenJob.build.commit}...${context.pullRequest.head.sha}`,
+    });
+
+    const skipRegexes = [...prConfig.skip_ci_on_only_changed, ...prConfig.kibana_build_reuse_regexes].map(
+      (regex) => new RegExp(regex, 'i')
+    );
+    const requiredRegexes = prConfig.always_require_ci_on_changed?.map((regex) => new RegExp(regex, 'i'));
+
+    if (this.areChangesSkippable(skipRegexes, requiredRegexes, resp.data as any)) {
+      return lastGreenJob;
+    }
+  };
 
   triggerBuildkiteBuild = async (prConfig: PrConfig, context: PullRequestEventContext) => {
     const { pullRequest, parsedComment } = context;
@@ -42,6 +91,15 @@ export default class PullRequests {
         for (const [key, value] of Object.entries(parsedComment.groups)) {
           const cleanKey = key.replace(/[^a-zA-Z_]/gi, '').toUpperCase();
           buildParams[`GITHUB_PR_COMMENT_VAR_${cleanKey}`] = value;
+        }
+      }
+    }
+
+    if (prConfig.kibana_build_reuse) {
+      if (!prConfig.kibana_build_reuse_users.length || prConfig.kibana_build_reuse_users.includes(context.pullRequest.user.login)) {
+        const reusableBuild = await this.getPossibleReusableBuildJob(prConfig, context);
+        if (reusableBuild) {
+          buildParams['KIBANA_BUILD_ID'] = reusableBuild.build.id;
         }
       }
     }
