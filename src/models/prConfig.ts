@@ -29,6 +29,7 @@ export class PrConfig {
 
   skip_ci_on_only_changed: Array<string> = [];
   always_require_ci_on_changed: Array<string> = [];
+  skippable_changes_beta_label = 'ci:skip-when-possible';
 
   kibana_build_reuse = false;
   kibana_build_reuse_pipeline_slugs: string[] = [];

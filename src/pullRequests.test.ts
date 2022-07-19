@@ -261,65 +261,110 @@ describe('pullRequests', () => {
 
   describe('shouldSkipCi', () => {
     beforeEach(() => {
+      const files = ['test.md', 'x-pack/README.md', 'docs/a_file.txt'].map((f) => ({ filename: f }));
+
       githubMock.paginate = jest.fn((endpoint) => {
         if (endpoint?.endpoint?.DEFAULTS?.url === '/repos/{owner}/{repo}/pulls/{pull_number}/files') {
-          return [{ filename: 'test.md' }, { filename: 'x-pack/README.md' }, { filename: 'docs/a_file.txt' }];
+          return files;
         }
 
         throw new Error('Endpoint not implemented in mock');
       }) as any as jest.MockedFunction<typeof githubMock.paginate>;
+
+      githubMock.repos.compareCommitsWithBasehead = jest.fn(() => {
+        return { data: { files: files } };
+      }) as any;
+
+      mockGithubListCommits(
+        githubMock,
+        ['BASE_SHA', 'TARGET_SHA'].map((commit) => ({ sha: commit }))
+      );
+
+      const builds = [
+        {
+          id: 'reusable-id',
+          build: {
+            id: 'reusable-build-id',
+            branch: 'main',
+            commit: 'TARGET_SHA',
+            number: 1,
+          },
+          created_at: '2020-01-01T00:00:00.000Z',
+          state: 'passed',
+        },
+      ];
+
+      esMock.search = jest.fn(() => {
+        return {
+          hits: {
+            hits: builds.map((build) => ({
+              _source: build,
+            })),
+          },
+        };
+      }) as any;
+
+      mocks.PR_CONFIG.skippable_changes_beta_label = 'skip';
     });
 
-    it('should not skip CI with no skip config', async () => {
-      const contextMock = new PullRequestEventContext({
-        owner: 'owner',
-        repo: 'repo',
-        pullRequest: mocks.PR,
-        type: PullRequestEventTriggerType.Update,
-      });
-      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
-      const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
-      expect(shouldSkipCi).toBe(false);
-    });
+    ['skip', 'no-skip'].forEach((setting) => {
+      describe(`with label = '${setting}'`, () => {
+        beforeEach(() => {
+          mocks.PR.labels = [{ name: setting }];
+        });
 
-    it('should skip CI if all files match', async () => {
-      const contextMock = new PullRequestEventContext({
-        owner: 'owner',
-        repo: 'repo',
-        pullRequest: mocks.PR,
-        type: PullRequestEventTriggerType.Update,
-      });
-      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
-      mocks.PR_CONFIG.skip_ci_on_only_changed = ['^docs/', '\\.md$'];
-      const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
-      expect(shouldSkipCi).toBe(true);
-    });
+        it('should not skip CI with no skip config', async () => {
+          const contextMock = new PullRequestEventContext({
+            owner: 'owner',
+            repo: 'repo',
+            pullRequest: mocks.PR,
+            type: PullRequestEventTriggerType.Update,
+          });
+          const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
+          const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
+          expect(shouldSkipCi).toBe(false);
+        });
 
-    it('should not skip CI if some files do not match', async () => {
-      const contextMock = new PullRequestEventContext({
-        owner: 'owner',
-        repo: 'repo',
-        pullRequest: mocks.PR,
-        type: PullRequestEventTriggerType.Update,
-      });
-      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
-      mocks.PR_CONFIG.skip_ci_on_only_changed = ['\\.md$'];
-      const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
-      expect(shouldSkipCi).toBe(false);
-    });
+        it('should skip CI if all files match', async () => {
+          const contextMock = new PullRequestEventContext({
+            owner: 'owner',
+            repo: 'repo',
+            pullRequest: mocks.PR,
+            type: PullRequestEventTriggerType.Update,
+          });
+          const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
+          mocks.PR_CONFIG.skip_ci_on_only_changed = ['^docs/', '\\.md$'];
+          const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
+          expect(shouldSkipCi).toBe(true);
+        });
 
-    it('should not skip CI if something matches a required file', async () => {
-      const contextMock = new PullRequestEventContext({
-        owner: 'owner',
-        repo: 'repo',
-        pullRequest: mocks.PR,
-        type: PullRequestEventTriggerType.Update,
+        it('should not skip CI if some files do not match', async () => {
+          const contextMock = new PullRequestEventContext({
+            owner: 'owner',
+            repo: 'repo',
+            pullRequest: mocks.PR,
+            type: PullRequestEventTriggerType.Update,
+          });
+          const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
+          mocks.PR_CONFIG.skip_ci_on_only_changed = ['\\.md$'];
+          const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
+          expect(shouldSkipCi).toBe(false);
+        });
+
+        it('should not skip CI if something matches a required file', async () => {
+          const contextMock = new PullRequestEventContext({
+            owner: 'owner',
+            repo: 'repo',
+            pullRequest: mocks.PR,
+            type: PullRequestEventTriggerType.Update,
+          });
+          const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
+          mocks.PR_CONFIG.skip_ci_on_only_changed = ['^docs/', '\\.md$'];
+          mocks.PR_CONFIG.always_require_ci_on_changed = ['^x-pack/README.md$'];
+          const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
+          expect(shouldSkipCi).toBe(false);
+        });
       });
-      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
-      mocks.PR_CONFIG.skip_ci_on_only_changed = ['^docs/', '\\.md$'];
-      mocks.PR_CONFIG.always_require_ci_on_changed = ['^x-pack/README.md$'];
-      const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
-      expect(shouldSkipCi).toBe(false);
     });
   });
 
@@ -755,7 +800,7 @@ describe('pullRequests', () => {
     });
   });
 
-  describe('getCommitsForBuildReuseCompare', () => {
+  describe('getCommitsForBuildCompare', () => {
     it('return 10 commits from base and target', async () => {
       const contextMock = new PullRequestEventContext({
         owner: 'owner',
@@ -796,7 +841,7 @@ describe('pullRequests', () => {
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
 
-      const commits = await pr.getCommitsForBuildReuseCompare(contextMock);
+      const commits = await pr.getCommitsForBuildCompare(contextMock, 10);
       expect(commits).toEqual([
         'TARGET_SHA_10',
         'TARGET_SHA_9',
@@ -821,6 +866,25 @@ describe('pullRequests', () => {
       ]);
     });
 
+    it('return only one base commit', async () => {
+      const contextMock = new PullRequestEventContext({
+        owner: 'owner',
+        repo: 'repo',
+        pullRequest: mocks.PR,
+        type: PullRequestEventTriggerType.Update,
+      });
+
+      mockGithubListCommits(
+        githubMock,
+        ['TARGET_SHA_3', 'TARGET_SHA_2', 'TARGET_SHA', 'PR_SHA_3', 'PR_SHA_2', 'PR_SHA'].map((commit) => ({ sha: commit }))
+      );
+
+      const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
+
+      const commits = await pr.getCommitsForBuildCompare(contextMock, 1);
+      expect(commits).toEqual(['TARGET_SHA', 'PR_SHA_3', 'PR_SHA_2', 'PR_SHA']);
+    });
+
     it('return all commits if fewer than 20', async () => {
       const contextMock = new PullRequestEventContext({
         owner: 'owner',
@@ -836,7 +900,7 @@ describe('pullRequests', () => {
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
 
-      const commits = await pr.getCommitsForBuildReuseCompare(contextMock);
+      const commits = await pr.getCommitsForBuildCompare(contextMock, 10);
       expect(commits).toEqual(['TARGET_SHA', 'PR_SHA_6', 'PR_SHA_5', 'PR_SHA_4', 'PR_SHA_3', 'PR_SHA_2', 'PR_SHA']);
     });
   });
