@@ -59,7 +59,7 @@ export default class PullRequests {
     );
     const requiredRegexes = prConfig.always_require_ci_on_changed?.map((regex) => new RegExp(regex, 'i'));
 
-    if (this.areChangesSkippable(skipRegexes, requiredRegexes, resp.data as any)) {
+    if (this.areChangesSkippable(skipRegexes, requiredRegexes, (resp.data as any).files)) {
       return lastGreenJob;
     }
   };

@@ -859,7 +859,7 @@ describe('pullRequests', () => {
       }) as any;
 
       githubMock.repos.compareCommitsWithBasehead = jest.fn(() => {
-        return { data: fileChanges.map((f) => ({ filename: f })) };
+        return { data: { files: fileChanges.map((f) => ({ filename: f })) } };
       }) as any;
     };
 
