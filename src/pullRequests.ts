@@ -19,6 +19,10 @@ export default class PullRequests {
   }
 
   getCommitsForBuildCompare = async (context: PullRequestEventContext, baseCommitsCount: number) => {
+    if (context.pullRequest.commits >= 100) {
+      return null;
+    }
+
     const commits = (
       await this.github.repos.listCommits({
         owner: context.owner,
@@ -28,13 +32,13 @@ export default class PullRequests {
       })
     ).data;
 
-    const baseCommitIndex = commits.findIndex((commit) => commit.sha === context.pullRequest.base.sha);
-    // Only look up to 10 commits back from the base commit
-    let commitsToSearch = commits.slice(Math.max(baseCommitIndex - (baseCommitsCount - 1), 0));
-    if (commitsToSearch.length > 20) {
-      // If there's more than 20 commits, then just select 10ish from the base commit, and 10 from the head of the PR (delete everything in the middle)
-      commitsToSearch.splice(10, commitsToSearch.length - 20);
-    }
+    // If the PR has 4 commits, and the above request returns 50 commits (46 from the base repo)
+    // then the 5th commit (index 4) should be the latest base commit
+    const baseCommitIndex = context.pullRequest.commits;
+
+    const prCommits = commits.slice(0, baseCommitIndex);
+    const baseCommits = commits.slice(baseCommitIndex, baseCommitIndex + baseCommitsCount);
+    const commitsToSearch = [...prCommits.slice(0, 10), ...baseCommits.slice(0, 10)];
 
     return commitsToSearch.map((commit) => commit.sha);
   };
@@ -158,11 +162,16 @@ export default class PullRequests {
         // Check only files that have changed since the last green build. If the changed files don't require CI, we can skip
         if (prConfig.skippable_changes_beta_label && pullRequest.labels.some((l) => l.name === prConfig.skippable_changes_beta_label)) {
           const commits = await this.getCommitsForBuildCompare(context, 0);
-          const buildJobs = await this.buildkiteIngestData.getBuildJobsForCommits(commits, prConfig.kibana_build_reuse_pipeline_slugs);
-          const lastGreenJob = buildJobs.find((job) => job.state === 'passed');
+          const buildJobs = await this.buildkiteIngestData.getBuildsForCommits(commits, prConfig.kibana_build_reuse_pipeline_slugs);
+          const lastGreenBuild = buildJobs.find((build) => build.state === 'passed');
+          if (lastGreenBuild) {
+            context.log(`Found a green build to compare against: ${lastGreenBuild.web_url}`);
+          }
 
           // If there's no green build for this PR so far, we should check all files in the PR
-          const commitForCompare = lastGreenJob ? lastGreenJob.build.commit : pullRequest.base.sha;
+          const commitForCompare = lastGreenBuild ? lastGreenBuild.commit : pullRequest.base.sha;
+          context.log(`Checking against commit ${commitForCompare} to see if this build can be skipped...`);
+
           const resp = await this.github.repos.compareCommitsWithBasehead({
             owner: context.owner,
             repo: context.repo,

@@ -275,6 +275,8 @@ describe('pullRequests', () => {
         return { data: { files: files } };
       }) as any;
 
+      mocks.PR.commits = 1;
+
       mockGithubListCommits(
         githubMock,
         ['BASE_SHA', 'TARGET_SHA'].map((commit) => ({ sha: commit }))
@@ -809,33 +811,34 @@ describe('pullRequests', () => {
         type: PullRequestEventTriggerType.Update,
       });
 
+      mocks.PR.commits = 12;
       mockGithubListCommits(
         githubMock,
         [
-          'TARGET_SHA_12',
-          'TARGET_SHA_11',
-          'TARGET_SHA_10',
-          'TARGET_SHA_9',
-          'TARGET_SHA_8',
-          'TARGET_SHA_7',
-          'TARGET_SHA_6',
-          'TARGET_SHA_5',
-          'TARGET_SHA_4',
-          'TARGET_SHA_3',
-          'TARGET_SHA_2',
-          'TARGET_SHA',
-          'PR_SHA_12',
-          'PR_SHA_11',
-          'PR_SHA_10',
-          'PR_SHA_9',
-          'PR_SHA_8',
-          'PR_SHA_7',
-          'PR_SHA_6',
-          'PR_SHA_5',
-          'PR_SHA_4',
-          'PR_SHA_3',
-          'PR_SHA_2',
           'PR_SHA',
+          'PR_SHA_2',
+          'PR_SHA_3',
+          'PR_SHA_4',
+          'PR_SHA_5',
+          'PR_SHA_6',
+          'PR_SHA_7',
+          'PR_SHA_8',
+          'PR_SHA_9',
+          'PR_SHA_10',
+          'PR_SHA_11',
+          'PR_SHA_12',
+          'TARGET_SHA',
+          'TARGET_SHA_2',
+          'TARGET_SHA_3',
+          'TARGET_SHA_4',
+          'TARGET_SHA_5',
+          'TARGET_SHA_6',
+          'TARGET_SHA_7',
+          'TARGET_SHA_8',
+          'TARGET_SHA_9',
+          'TARGET_SHA_10',
+          'TARGET_SHA_11',
+          'TARGET_SHA_12',
         ].map((commit) => ({ sha: commit }))
       );
 
@@ -843,26 +846,26 @@ describe('pullRequests', () => {
 
       const commits = await pr.getCommitsForBuildCompare(contextMock, 10);
       expect(commits).toEqual([
-        'TARGET_SHA_10',
-        'TARGET_SHA_9',
-        'TARGET_SHA_8',
-        'TARGET_SHA_7',
-        'TARGET_SHA_6',
-        'TARGET_SHA_5',
-        'TARGET_SHA_4',
-        'TARGET_SHA_3',
-        'TARGET_SHA_2',
-        'TARGET_SHA',
-        'PR_SHA_10',
-        'PR_SHA_9',
-        'PR_SHA_8',
-        'PR_SHA_7',
-        'PR_SHA_6',
-        'PR_SHA_5',
-        'PR_SHA_4',
-        'PR_SHA_3',
-        'PR_SHA_2',
         'PR_SHA',
+        'PR_SHA_2',
+        'PR_SHA_3',
+        'PR_SHA_4',
+        'PR_SHA_5',
+        'PR_SHA_6',
+        'PR_SHA_7',
+        'PR_SHA_8',
+        'PR_SHA_9',
+        'PR_SHA_10',
+        'TARGET_SHA',
+        'TARGET_SHA_2',
+        'TARGET_SHA_3',
+        'TARGET_SHA_4',
+        'TARGET_SHA_5',
+        'TARGET_SHA_6',
+        'TARGET_SHA_7',
+        'TARGET_SHA_8',
+        'TARGET_SHA_9',
+        'TARGET_SHA_10',
       ]);
     });
 
@@ -874,15 +877,16 @@ describe('pullRequests', () => {
         type: PullRequestEventTriggerType.Update,
       });
 
+      mocks.PR.commits = 3;
       mockGithubListCommits(
         githubMock,
-        ['TARGET_SHA_3', 'TARGET_SHA_2', 'TARGET_SHA', 'PR_SHA_3', 'PR_SHA_2', 'PR_SHA'].map((commit) => ({ sha: commit }))
+        ['PR_SHA', 'PR_SHA_2', 'PR_SHA_3', 'TARGET_SHA', 'TARGET_SHA_2', 'TARGET_SHA_3'].map((commit) => ({ sha: commit }))
       );
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
 
       const commits = await pr.getCommitsForBuildCompare(contextMock, 1);
-      expect(commits).toEqual(['TARGET_SHA', 'PR_SHA_3', 'PR_SHA_2', 'PR_SHA']);
+      expect(commits).toEqual(['PR_SHA', 'PR_SHA_2', 'PR_SHA_3', 'TARGET_SHA']);
     });
 
     it('return all commits if fewer than 20', async () => {
@@ -893,15 +897,16 @@ describe('pullRequests', () => {
         type: PullRequestEventTriggerType.Update,
       });
 
+      mocks.PR.commits = 6;
       mockGithubListCommits(
         githubMock,
-        ['TARGET_SHA', 'PR_SHA_6', 'PR_SHA_5', 'PR_SHA_4', 'PR_SHA_3', 'PR_SHA_2', 'PR_SHA'].map((commit) => ({ sha: commit }))
+        ['PR_SHA', 'PR_SHA_2', 'PR_SHA_3', 'PR_SHA_4', 'PR_SHA_5', 'PR_SHA_6', 'TARGET_SHA'].map((commit) => ({ sha: commit }))
       );
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
 
       const commits = await pr.getCommitsForBuildCompare(contextMock, 10);
-      expect(commits).toEqual(['TARGET_SHA', 'PR_SHA_6', 'PR_SHA_5', 'PR_SHA_4', 'PR_SHA_3', 'PR_SHA_2', 'PR_SHA']);
+      expect(commits).toEqual(['PR_SHA', 'PR_SHA_2', 'PR_SHA_3', 'PR_SHA_4', 'PR_SHA_5', 'PR_SHA_6', 'TARGET_SHA']);
     });
   });
 
@@ -942,6 +947,7 @@ describe('pullRequests', () => {
       pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
     });
 
+    mocks.PR.commits = 1;
     it('should return a reusable job if all changes are skippable', async () => {
       mockData(
         ['TARGET_SHA', 'PR_SHA'],
@@ -968,8 +974,9 @@ describe('pullRequests', () => {
     it('should return a reusable job if all changes are skippable or allowed for build reuse', async () => {
       mocks.PR_CONFIG.kibana_build_reuse_regexes = ['\\.txt$'];
 
+      mocks.PR.commits = 1;
       mockData(
-        ['TARGET_SHA', 'PR_SHA'],
+        ['PR_SHA', 'TARGET_SHA'],
         [
           {
             id: 'reusable-id',
@@ -993,6 +1000,7 @@ describe('pullRequests', () => {
     it('should return nothing if a change is not allowed for reuse', async () => {
       mocks.PR_CONFIG.kibana_build_reuse_regexes = ['\\.txt$'];
 
+      mocks.PR.commits = 1;
       mockData(
         ['TARGET_SHA', 'PR_SHA'],
         [
@@ -1016,19 +1024,20 @@ describe('pullRequests', () => {
     });
 
     it('should return the most recent job', async () => {
+      mocks.PR.commits = 10;
       mockData(
         [
-          'TARGET_SHA',
-          'PR_SHA_10',
-          'PR_SHA_9',
-          'PR_SHA_8',
-          'PR_SHA_7',
-          'PR_SHA_6',
-          'PR_SHA_5',
-          'PR_SHA_4',
-          'PR_SHA_3',
-          'PR_SHA_2',
           'PR_SHA',
+          'PR_SHA_2',
+          'PR_SHA_3',
+          'PR_SHA_4',
+          'PR_SHA_5',
+          'PR_SHA_6',
+          'PR_SHA_7',
+          'PR_SHA_8',
+          'PR_SHA_9',
+          'PR_SHA_10',
+          'TARGET_SHA',
         ],
         [
           {

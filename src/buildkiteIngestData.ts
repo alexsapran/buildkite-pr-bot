@@ -1,4 +1,5 @@
 import { Client } from '@elastic/elasticsearch';
+import { Build } from './models/buildkite/build';
 import { Job } from './models/buildkite/job';
 
 export type JobFromIngest = Job & {
@@ -61,5 +62,34 @@ export class BuildkiteIngestData {
     jobs.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
     return jobs;
+  };
+
+  getBuildsForCommits = async (commits: string[], pipelineSlugs: string[]) => {
+    const buildsFromEs = await this.es.search<Build>({
+      index: 'buildkite-builds',
+      body: {
+        query: {
+          bool: {
+            must: [
+              {
+                terms: {
+                  'commit.keyword': commits,
+                },
+              },
+              {
+                terms: {
+                  'pipeline.slug.keyword': pipelineSlugs,
+                },
+              },
+            ],
+          },
+        },
+      },
+    });
+
+    const builds = buildsFromEs.hits.hits.map((hit) => hit._source);
+    builds.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+    return builds;
   };
 }
