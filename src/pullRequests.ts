@@ -23,22 +23,32 @@ export default class PullRequests {
       return null;
     }
 
-    const commits = (
-      await this.github.repos.listCommits({
+    let commitsToSearch;
+
+    const prCommits = (
+      await this.github.pulls.listCommits({
         owner: context.owner,
         repo: context.repo,
-        sha: context.pullRequest.head.sha,
+        pull_number: context.pullRequest.number,
         per_page: 100,
       })
     ).data;
 
-    // If the PR has 4 commits, and the above request returns 50 commits (46 from the base repo)
-    // then the 5th commit (index 4) should be the latest base commit
-    const baseCommitIndex = context.pullRequest.commits;
+    if (baseCommitsCount > 0) {
+      const commits = (
+        await this.github.repos.listCommits({
+          owner: context.owner,
+          repo: context.repo,
+          sha: context.pullRequest.head.sha,
+          per_page: 100,
+        })
+      ).data;
 
-    const prCommits = commits.slice(0, baseCommitIndex);
-    const baseCommits = commits.slice(baseCommitIndex, baseCommitIndex + baseCommitsCount);
-    const commitsToSearch = [...prCommits.slice(0, 10), ...baseCommits.slice(0, 10)];
+      const baseCommits = commits.filter((commit) => !prCommits.some((prCommit) => prCommit.sha === commit.sha));
+      commitsToSearch = [...prCommits.slice(0, 10), ...baseCommits.slice(0, Math.min(baseCommitsCount, 10))];
+    } else {
+      commitsToSearch = prCommits.slice(0, 20);
+    }
 
     return commitsToSearch.map((commit) => commit.sha);
   };

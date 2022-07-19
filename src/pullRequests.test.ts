@@ -72,12 +72,18 @@ const mockGithubGetContent = (githubMock: Octokit, data: Object) => {
   }) as any as jest.MockedFunction<typeof githubMock.repos.getContent>;
 };
 
-const mockGithubListCommits = (githubMock: Octokit, data: Object) => {
+const mockGithubListCommits = (githubMock: Octokit, data: { sha: string }[]) => {
   githubMock.repos.listCommits = jest.fn(() => {
     return {
       data: data,
     };
   }) as any as jest.MockedFunction<typeof githubMock.repos.listCommits>;
+
+  githubMock.pulls.listCommits = jest.fn(() => {
+    return {
+      data: data.filter((commit) => commit.sha.startsWith('PR_')),
+    };
+  }) as any as jest.MockedFunction<typeof githubMock.pulls.listCommits>;
 };
 
 describe('pullRequests', () => {
