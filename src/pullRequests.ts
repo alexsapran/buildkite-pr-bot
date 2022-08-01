@@ -111,9 +111,11 @@ export default class PullRequests {
 
     if (prConfig.kibana_build_reuse) {
       if (!prConfig.kibana_build_reuse_label || pullRequest.labels.some((l) => l.name === prConfig.kibana_build_reuse_label)) {
-        const reusableBuild = await this.getPossibleReusableBuildJob(prConfig, context);
-        if (reusableBuild) {
-          buildParams['KIBANA_BUILD_ID'] = reusableBuild.build.id;
+        const reusableJob = await this.getPossibleReusableBuildJob(prConfig, context);
+        if (reusableJob) {
+          buildParams['KIBANA_BUILD_ID'] = reusableJob.build.id;
+          buildParams['KIBANA_REUSABLE_BUILD_BUILD_ID'] = reusableJob.build.id;
+          buildParams['KIBANA_REUSABLE_BUILD_JOB_ID'] = reusableJob.build.id;
         }
       }
     }
