@@ -55,7 +55,7 @@ export default class PullRequests {
 
   getPossibleReusableBuildJob = async (prConfig: PrConfig, context: PullRequestEventContext) => {
     const commits = await this.getCommitsForBuildCompare(context, 10);
-    const buildJobs = await this.buildkiteIngestData.getBuildJobsForCommits(commits, prConfig.kibana_build_reuse_pipeline_slugs);
+    const buildJobs = await this.buildkiteIngestData.getBuildJobsForCommits(commits, prConfig.kibana_build_reuse_pipeline_slugs, 'passed');
     const lastGreenJob = buildJobs.find((job) => job.state === 'passed');
 
     if (!lastGreenJob) {
@@ -116,6 +116,7 @@ export default class PullRequests {
           buildParams['KIBANA_BUILD_ID'] = reusableJob.build.id;
           buildParams['KIBANA_REUSABLE_BUILD_BUILD_ID'] = reusableJob.build.id;
           buildParams['KIBANA_REUSABLE_BUILD_JOB_ID'] = reusableJob.id;
+          buildParams['KIBANA_REUSABLE_BUILD_JOB_URL'] = reusableJob.web_url;
         }
       }
     }
