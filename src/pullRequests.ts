@@ -115,7 +115,7 @@ export default class PullRequests {
         if (reusableJob) {
           buildParams['KIBANA_BUILD_ID'] = reusableJob.build.id;
           buildParams['KIBANA_REUSABLE_BUILD_BUILD_ID'] = reusableJob.build.id;
-          buildParams['KIBANA_REUSABLE_BUILD_JOB_ID'] = reusableJob.build.id;
+          buildParams['KIBANA_REUSABLE_BUILD_JOB_ID'] = reusableJob.id;
         }
       }
     }
