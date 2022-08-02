@@ -1,4 +1,5 @@
 import { Client } from '@elastic/elasticsearch';
+import { QueryDslQueryContainer } from '@elastic/elasticsearch/lib/api/types';
 import { Build } from './models/buildkite/build';
 import { Job } from './models/buildkite/job';
 
@@ -30,7 +31,37 @@ export class BuildkiteIngestData {
       });
   }
 
-  getBuildJobsForCommits = async (commits: string[], pipelineSlugs: string[]) => {
+  getBuildJobsForCommits = async (commits: string[], pipelineSlugs: string[], state: string = null) => {
+    const query: QueryDslQueryContainer = {
+      bool: {
+        must: [
+          {
+            terms: {
+              'build.commit.keyword': commits,
+            },
+          },
+          {
+            match: {
+              'step_key.keyword': 'build',
+            },
+          },
+          {
+            terms: {
+              'pipeline.slug.keyword': pipelineSlugs,
+            },
+          },
+        ],
+      },
+    };
+
+    if (state) {
+      (query.bool.must as QueryDslQueryContainer[]).push({
+        match: {
+          'state.keyword': state,
+        },
+      });
+    }
+
     const buildJobs = await this.es.search<JobFromIngest>({
       index: 'buildkite-jobs',
       body: {
@@ -39,27 +70,7 @@ export class BuildkiteIngestData {
             created_at: 'desc',
           },
         ],
-        query: {
-          bool: {
-            must: [
-              {
-                terms: {
-                  'build.commit.keyword': commits,
-                },
-              },
-              {
-                match: {
-                  'step_key.keyword': 'build',
-                },
-              },
-              {
-                terms: {
-                  'pipeline.slug.keyword': pipelineSlugs,
-                },
-              },
-            ],
-          },
-        },
+        query: query,
       },
     });
 
