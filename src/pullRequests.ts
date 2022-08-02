@@ -167,48 +167,52 @@ export default class PullRequests {
   shouldSkipCi = async (prConfig: PrConfig, context: PullRequestEventContext) => {
     const { pullRequest } = context;
 
-    if (context.type === PullRequestEventTriggerType.Create || context.type === PullRequestEventTriggerType.Update) {
-      if (prConfig.skip_ci_on_only_changed?.length > 0 && pullRequest.changed_files < 1000) {
-        const skipRegexes = prConfig.skip_ci_on_only_changed.map((regex) => new RegExp(regex, 'i'));
-        const requiredRegexes = prConfig.always_require_ci_on_changed?.map((regex) => new RegExp(regex, 'i'));
+    try {
+      if (context.type === PullRequestEventTriggerType.Create || context.type === PullRequestEventTriggerType.Update) {
+        if (prConfig.skip_ci_on_only_changed?.length > 0 && pullRequest.changed_files < 1000) {
+          const skipRegexes = prConfig.skip_ci_on_only_changed.map((regex) => new RegExp(regex, 'i'));
+          const requiredRegexes = prConfig.always_require_ci_on_changed?.map((regex) => new RegExp(regex, 'i'));
 
-        // Check only files that have changed since the last green build. If the changed files don't require CI, we can skip
-        if (
-          prConfig.enable_skippable_commits ||
-          (prConfig.skippable_changes_beta_label && pullRequest.labels.some((l) => l.name === prConfig.skippable_changes_beta_label))
-        ) {
-          const commits = await this.getCommitsForBuildCompare(context, 0);
-          const buildJobs = await this.buildkiteIngestData.getBuildsForCommits(commits, prConfig.kibana_build_reuse_pipeline_slugs);
-          const lastGreenBuild = buildJobs.find((build) => build.state === 'passed');
-          if (lastGreenBuild) {
-            context.log(`Found a green build to compare against: ${lastGreenBuild.web_url}`);
+          // Check only files that have changed since the last green build. If the changed files don't require CI, we can skip
+          if (
+            prConfig.enable_skippable_commits ||
+            (prConfig.skippable_changes_beta_label && pullRequest.labels.some((l) => l.name === prConfig.skippable_changes_beta_label))
+          ) {
+            const commits = await this.getCommitsForBuildCompare(context, 0);
+            const buildJobs = await this.buildkiteIngestData.getBuildsForCommits(commits, prConfig.kibana_build_reuse_pipeline_slugs);
+            const lastGreenBuild = buildJobs.find((build) => build.state === 'passed');
+            if (lastGreenBuild) {
+              context.log(`Found a green build to compare against: ${lastGreenBuild.web_url}`);
+            }
+
+            // If there's no green build for this PR so far, we should check all files in the PR
+            const commitForCompare = lastGreenBuild ? lastGreenBuild.commit : pullRequest.base.sha;
+            context.log(`Checking against commit ${commitForCompare} to see if this build can be skipped...`);
+
+            const resp = await this.github.repos.compareCommitsWithBasehead({
+              owner: context.owner,
+              repo: context.repo,
+              basehead: `${commitForCompare}...${context.pullRequest.head.sha}`,
+            });
+
+            // If changes aren't skippable, go ahead and fall back to the old skippable check below
+            if (this.areChangesSkippable(skipRegexes, requiredRegexes, resp.data.files ?? [])) {
+              return true;
+            }
           }
 
-          // If there's no green build for this PR so far, we should check all files in the PR
-          const commitForCompare = lastGreenBuild ? lastGreenBuild.commit : pullRequest.base.sha;
-          context.log(`Checking against commit ${commitForCompare} to see if this build can be skipped...`);
-
-          const resp = await this.github.repos.compareCommitsWithBasehead({
+          const changedFiles = await this.github.paginate(this.github.pulls.listFiles, {
             owner: context.owner,
             repo: context.repo,
-            basehead: `${commitForCompare}...${context.pullRequest.head.sha}`,
+            pull_number: pullRequest.number,
+            per_page: 100,
           });
 
-          // If changes aren't skippable, go ahead and fall back to the old skippable check below
-          if (this.areChangesSkippable(skipRegexes, requiredRegexes, resp.data.files ?? [])) {
-            return true;
-          }
+          return this.areChangesSkippable(skipRegexes, requiredRegexes, changedFiles);
         }
-
-        const changedFiles = await this.github.paginate(this.github.pulls.listFiles, {
-          owner: context.owner,
-          repo: context.repo,
-          pull_number: pullRequest.number,
-          per_page: 100,
-        });
-
-        return this.areChangesSkippable(skipRegexes, requiredRegexes, changedFiles);
       }
+    } catch (ex: any) {
+      console.error('Error checking for skippable changes', ex.toString());
     }
 
     return false;
