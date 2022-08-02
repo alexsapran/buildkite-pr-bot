@@ -34,6 +34,11 @@ export class BuildkiteIngestData {
     const buildJobs = await this.es.search<JobFromIngest>({
       index: 'buildkite-jobs',
       body: {
+        sort: [
+          {
+            created_at: 'desc',
+          },
+        ],
         query: {
           bool: {
             must: [
@@ -68,6 +73,11 @@ export class BuildkiteIngestData {
     const buildsFromEs = await this.es.search<Build>({
       index: 'buildkite-builds',
       body: {
+        sort: [
+          {
+            created_at: 'desc',
+          },
+        ],
         query: {
           bool: {
             must: [
