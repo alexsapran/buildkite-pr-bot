@@ -173,7 +173,10 @@ export default class PullRequests {
         const requiredRegexes = prConfig.always_require_ci_on_changed?.map((regex) => new RegExp(regex, 'i'));
 
         // Check only files that have changed since the last green build. If the changed files don't require CI, we can skip
-        if (prConfig.skippable_changes_beta_label && pullRequest.labels.some((l) => l.name === prConfig.skippable_changes_beta_label)) {
+        if (
+          prConfig.enable_skippable_commits ||
+          (prConfig.skippable_changes_beta_label && pullRequest.labels.some((l) => l.name === prConfig.skippable_changes_beta_label))
+        ) {
           const commits = await this.getCommitsForBuildCompare(context, 0);
           const buildJobs = await this.buildkiteIngestData.getBuildsForCommits(commits, prConfig.kibana_build_reuse_pipeline_slugs);
           const lastGreenBuild = buildJobs.find((build) => build.state === 'passed');
@@ -191,7 +194,10 @@ export default class PullRequests {
             basehead: `${commitForCompare}...${context.pullRequest.head.sha}`,
           });
 
-          return this.areChangesSkippable(skipRegexes, requiredRegexes, resp.data.files ?? []);
+          // If changes aren't skippable, go ahead and fall back to the old skippable check below
+          if (this.areChangesSkippable(skipRegexes, requiredRegexes, resp.data.files ?? [])) {
+            return true;
+          }
         }
 
         const changedFiles = await this.github.paginate(this.github.pulls.listFiles, {
