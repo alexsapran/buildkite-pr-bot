@@ -55,6 +55,10 @@ export default class PullRequests {
 
   getPossibleReusableBuildJob = async (prConfig: PrConfig, context: PullRequestEventContext) => {
     const commits = await this.getCommitsForBuildCompare(context, 10);
+    if (!commits?.length) {
+      return null;
+    }
+
     const buildJobs = await this.buildkiteIngestData.getBuildJobsForCommits(commits, prConfig.kibana_build_reuse_pipeline_slugs, 'passed');
     const lastGreenJob = buildJobs.find((job) => job.state === 'passed');
 
