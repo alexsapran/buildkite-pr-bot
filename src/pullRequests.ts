@@ -113,7 +113,8 @@ export default class PullRequests {
       }
     }
 
-    if (prConfig.kibana_build_reuse) {
+    // 7.17 doesn't support build reuse, but all active branches going forward should be fine
+    if (prConfig.kibana_build_reuse && targetBranch !== '7.17') {
       if (!prConfig.kibana_build_reuse_label || pullRequest.labels.some((l) => l.name === prConfig.kibana_build_reuse_label)) {
         const reusableJob = await this.getPossibleReusableBuildJob(prConfig, context);
         if (reusableJob) {
