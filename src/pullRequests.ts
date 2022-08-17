@@ -71,13 +71,20 @@ export default class PullRequests {
       repo: context.repo,
       basehead: `${lastGreenJob.build.commit}...${context.pullRequest.head.sha}`,
     });
+    const { files } = resp.data as any;
+
+    // The API only returns up to 300 files. To get the full list in this case, you have to ask github for the full diff in diff format.
+    // This diff could be huge, so let's just assume that if there are over 300 files in the diff, it's pretty unlikely to be skippable.
+    if (files.length >= 300) {
+      return null;
+    }
 
     const skipRegexes = [...prConfig.skip_ci_on_only_changed, ...prConfig.kibana_build_reuse_regexes].map(
       (regex) => new RegExp(regex, 'i')
     );
     const requiredRegexes = prConfig.always_require_ci_on_changed?.map((regex) => new RegExp(regex, 'i'));
 
-    if (this.areChangesSkippable(skipRegexes, requiredRegexes, (resp.data as any).files)) {
+    if (this.areChangesSkippable(skipRegexes, requiredRegexes, files)) {
       return lastGreenJob;
     }
   };
