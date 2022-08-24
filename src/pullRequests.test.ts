@@ -372,6 +372,33 @@ describe('pullRequests', () => {
           const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
           expect(shouldSkipCi).toBe(false);
         });
+
+        it('should not skip CI if 300+ files are present in the commit, even if skippable', async () => {
+          const files = new Array(300).fill(0).map((_, i) => ({ filename: `file-${i}.md` }));
+
+          githubMock.paginate = jest.fn((endpoint) => {
+            if (endpoint?.endpoint?.DEFAULTS?.url === '/repos/{owner}/{repo}/pulls/{pull_number}/files') {
+              return ['other-file.js', ...files];
+            }
+
+            throw new Error('Endpoint not implemented in mock');
+          }) as any as jest.MockedFunction<typeof githubMock.paginate>;
+
+          githubMock.repos.compareCommitsWithBasehead = jest.fn(() => {
+            return { data: { files: files } };
+          }) as any;
+
+          const contextMock = new PullRequestEventContext({
+            owner: 'owner',
+            repo: 'repo',
+            pullRequest: mocks.PR,
+            type: PullRequestEventTriggerType.Update,
+          });
+          const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
+          mocks.PR_CONFIG.skip_ci_on_only_changed = ['\\.md$'];
+          const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
+          expect(shouldSkipCi).toBe(false);
+        });
       });
     });
   });

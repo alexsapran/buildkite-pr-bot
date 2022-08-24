@@ -207,9 +207,13 @@ export default class PullRequests {
               basehead: `${commitForCompare}...${context.pullRequest.head.sha}`,
             });
 
-            // If changes aren't skippable, go ahead and fall back to the old skippable check below
-            if (this.areChangesSkippable(skipRegexes, requiredRegexes, resp.data.files ?? [])) {
-              return true;
+            // The API only returns up to 300 files. To get the full list in this case, you have to ask github for the full diff in diff format.
+            // This diff could be huge, so let's just assume that if there are over 300 files in the diff, it's pretty unlikely to be skippable.
+            if (resp.data.files && resp.data.files.length < 300) {
+              // If changes aren't skippable, go ahead and fall back to the old skippable check below
+              if (this.areChangesSkippable(skipRegexes, requiredRegexes, resp.data.files)) {
+                return true;
+              }
             }
           }
 
