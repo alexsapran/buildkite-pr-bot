@@ -1,7 +1,5 @@
 # Elastic Buildkite PR Bot
 
-WIP
-
 ## Overview
 
 - Triggers PR builds in Buildkite when a PR is opened, updated via commit, or a comment is present with a customizable trigger phrase.
@@ -212,3 +210,50 @@ As a concrete example:
 You have `skip_ci_on_only_changed` set to `["\\.md$"]` to skip CI for PRs that only change documentation files.
 
 You could have `always_require_ci_on_changed` set to `["^some/important/directory/.+\\.md$"]` to ensure that CI is always triggered for PRs that change documentation files in `some/important/directory`.
+
+**enable_skippable_commits**
+
+- Enable skipping of builds based on the changes present in individual commits.
+- Value: true or false
+- Default: false
+
+On commit, the diff between that commit and the commit of the **most recent successful build** is compared against the `skip_ci_on_only_changed` and `always_require_ci_on_changed` regular expressions. If all of the files in the diff are skippable, the build is skipped.
+
+**kibana_versions_check**
+
+- Before triggering a build, check the target branch against branches in Kibana's `versions.json` file. If the branch is no longer open, skip the build and leave an error message via PR comment.
+- Value: true or false
+- Default: false
+
+**kibana_build_reuse**
+
+- Triggers builds with `KIBANA_BUILD_ID` whenever a Kibana distribution from a previous build can be re-used.
+- Value: true or false
+- Default: false
+
+The diff between the current commit and the most recent successful build step in the branch's commit history (including the upstream) is compared to `kibana_build_reuse_regexes` and `skip_ci_on_only_changed`. If the build can be reused based on the diff, the following environment variables will be set when the build is triggered:
+
+- KIBANA_BUILD_ID
+- KIBANA_REUSABLE_BUILD_BUILD_ID
+- KIBANA_REUSABLE_BUILD_JOB_ID
+- KIBANA_REUSABLE_BUILD_JOB_URL
+
+**kibana_build_reuse_pipeline_slugs**
+
+- A list of pipeline slugs to use when looking for reusable build steps. e.g. `kibana-on-merge` and `kibana-pull-request`
+- Value: Array of strings
+- Default: `[]`
+
+**kibana_build_reuse_regexes**
+
+- A list of file path regexes for files that are known to not effect the build, i.e. changes to these files will still allow a build to be reused. These are added to `skip_ci_on_only_changed`, so they do not need to be set in both properties.
+- Value: Value: Array of
+  [JavaScript-style](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_Expressions)
+  regular expressions
+- Default: `[]`
+
+**kibana_build_reuse_label**
+
+- If this config is present, it makes the build reuse feature opt-in, via this label. If the config is missing, all PRs are candidates for build reuse.
+- Value: `any string representing a github label`
+- Default: `<empty string>`
