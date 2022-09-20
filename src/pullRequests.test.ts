@@ -848,18 +848,18 @@ describe('pullRequests', () => {
       mockGithubListCommits(
         githubMock,
         [
-          'PR_SHA',
-          'PR_SHA_2',
-          'PR_SHA_3',
-          'PR_SHA_4',
-          'PR_SHA_5',
-          'PR_SHA_6',
-          'PR_SHA_7',
-          'PR_SHA_8',
-          'PR_SHA_9',
-          'PR_SHA_10',
-          'PR_SHA_11',
           'PR_SHA_12',
+          'PR_SHA_11',
+          'PR_SHA_10',
+          'PR_SHA_9',
+          'PR_SHA_8',
+          'PR_SHA_7',
+          'PR_SHA_6',
+          'PR_SHA_5',
+          'PR_SHA_4',
+          'PR_SHA_3',
+          'PR_SHA_2',
+          'PR_SHA',
           'TARGET_SHA',
           'TARGET_SHA_2',
           'TARGET_SHA_3',
@@ -913,7 +913,7 @@ describe('pullRequests', () => {
       mocks.PR.commits = 3;
       mockGithubListCommits(
         githubMock,
-        ['PR_SHA', 'PR_SHA_2', 'PR_SHA_3', 'TARGET_SHA', 'TARGET_SHA_2', 'TARGET_SHA_3'].map((commit) => ({ sha: commit }))
+        ['PR_SHA_3', 'PR_SHA_2', 'PR_SHA', 'TARGET_SHA', 'TARGET_SHA_2', 'TARGET_SHA_3'].map((commit) => ({ sha: commit }))
       );
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
@@ -933,7 +933,7 @@ describe('pullRequests', () => {
       mocks.PR.commits = 6;
       mockGithubListCommits(
         githubMock,
-        ['PR_SHA', 'PR_SHA_2', 'PR_SHA_3', 'PR_SHA_4', 'PR_SHA_5', 'PR_SHA_6', 'TARGET_SHA'].map((commit) => ({ sha: commit }))
+        ['PR_SHA_6', 'PR_SHA_5', 'PR_SHA_4', 'PR_SHA_3', 'PR_SHA_2', 'PR_SHA', 'TARGET_SHA'].map((commit) => ({ sha: commit }))
       );
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
@@ -1060,16 +1060,16 @@ describe('pullRequests', () => {
       mocks.PR.commits = 10;
       mockData(
         [
-          'PR_SHA',
-          'PR_SHA_2',
-          'PR_SHA_3',
-          'PR_SHA_4',
-          'PR_SHA_5',
-          'PR_SHA_6',
-          'PR_SHA_7',
-          'PR_SHA_8',
-          'PR_SHA_9',
           'PR_SHA_10',
+          'PR_SHA_9',
+          'PR_SHA_8',
+          'PR_SHA_7',
+          'PR_SHA_6',
+          'PR_SHA_5',
+          'PR_SHA_4',
+          'PR_SHA_3',
+          'PR_SHA_2',
+          'PR_SHA',
           'TARGET_SHA',
         ],
         [

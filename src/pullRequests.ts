@@ -32,7 +32,7 @@ export default class PullRequests {
         pull_number: context.pullRequest.number,
         per_page: 100,
       })
-    ).data;
+    ).data.reverse();
 
     if (baseCommitsCount > 0) {
       const commits = (
