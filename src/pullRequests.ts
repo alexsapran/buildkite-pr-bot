@@ -120,17 +120,21 @@ export default class PullRequests {
       }
     }
 
-    // 7.17 doesn't support build reuse, but all active branches going forward should be fine
-    if (prConfig.kibana_build_reuse && targetBranch !== '7.17') {
-      if (!prConfig.kibana_build_reuse_label || pullRequest.labels.some((l) => l.name === prConfig.kibana_build_reuse_label)) {
-        const reusableJob = await this.getPossibleReusableBuildJob(prConfig, context);
-        if (reusableJob) {
-          buildParams['KIBANA_BUILD_ID'] = reusableJob.build.id;
-          buildParams['KIBANA_REUSABLE_BUILD_BUILD_ID'] = reusableJob.build.id;
-          buildParams['KIBANA_REUSABLE_BUILD_JOB_ID'] = reusableJob.id;
-          buildParams['KIBANA_REUSABLE_BUILD_JOB_URL'] = reusableJob.web_url;
+    try {
+      // 7.17 doesn't support build reuse, but all active branches going forward should be fine
+      if (prConfig.kibana_build_reuse && targetBranch !== '7.17') {
+        if (!prConfig.kibana_build_reuse_label || pullRequest.labels.some((l) => l.name === prConfig.kibana_build_reuse_label)) {
+          const reusableJob = await this.getPossibleReusableBuildJob(prConfig, context);
+          if (reusableJob) {
+            buildParams['KIBANA_BUILD_ID'] = reusableJob.build.id;
+            buildParams['KIBANA_REUSABLE_BUILD_BUILD_ID'] = reusableJob.build.id;
+            buildParams['KIBANA_REUSABLE_BUILD_JOB_ID'] = reusableJob.id;
+            buildParams['KIBANA_REUSABLE_BUILD_JOB_URL'] = reusableJob.web_url;
+          }
         }
       }
+    } catch (ex) {
+      console.error('Error while checking for reusable build', ex.toString());
     }
 
     try {
