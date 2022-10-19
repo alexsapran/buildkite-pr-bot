@@ -1,0 +1,21 @@
+{
+  "jobs": [
+    {
+      "repoOwner": "elastic",
+      "repoName": "buildkite-pr-bot",
+      "pipelineSlug": "buildkite-pr-bot",
+
+      "enabled": true,
+      "allow_org_users": true,
+      "allowed_repo_permissions": ["admin", "write"],
+      "set_commit_status": true,
+      "commit_status_context": "flavortown-ci",
+      "build_on_commit": true,
+      "build_on_comment": true,
+      "trigger_comment_regex": "^(?:(?:buildkite\\W+)?(?:build|test)\\W+(?:this|it))",
+      "always_trigger_comment_regex": "^(?:(?:buildkite\\W+)?(?:build|test)\\W+(?:this|it))",
+      "skip_ci_labels": ["skip-ci"],
+      "skip_ci_on_only_changed": ["\\.md$"]
+    }
+  ]
+}
