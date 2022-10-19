@@ -24,6 +24,7 @@ export interface BuildkiteBuild {
 export default class Buildkite {
   http: AxiosInstance;
   agentHttp: AxiosInstance;
+  buildkiteOrg = process.env.BUILDKITE_ORG ?? 'elastic';
 
   constructor() {
     const BUILDKITE_BASE_URL = process.env.BUILDKITE_BASE_URL || 'https://api.buildkite.com';
@@ -49,7 +50,7 @@ export default class Buildkite {
 
   // https://buildkite.com/docs/apis/rest-api/builds#create-a-build
   triggerBuild = async (pipelineSlug: string, options: BuildkiteTriggerBuildParams): Promise<BuildkiteBuild> => {
-    const url = `v2/organizations/elastic/pipelines/${pipelineSlug}/builds`;
+    const url = `v2/organizations/${this.buildkiteOrg}/pipelines/${pipelineSlug}/builds`;
 
     return (await this.http.post(url, options)).data;
   };

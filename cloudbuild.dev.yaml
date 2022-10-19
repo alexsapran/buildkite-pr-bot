@@ -11,7 +11,7 @@ steps:
     waitFor: ['install']
 
   - name: 'gcr.io/kaniko-project/executor:v1.6.0'
-    args: ['--destination=gcr.io/$PROJECT_ID/kibana-buildkite-pr-bot:$COMMIT_SHA', '--cache=true']
+    args: ['--destination=gcr.io/$PROJECT_ID/elastic-buildkite-pr-bot:$COMMIT_SHA', '--cache=true']
     waitFor: ['-']
 
   - name: 'gcr.io/cloud-builders/gcloud'
@@ -20,20 +20,20 @@ steps:
         'beta',
         'run',
         'deploy',
-        'kibana-buildkite-pr-bot',
+        'elastic-buildkite-pr-bot',
         '--image',
-        'gcr.io/$PROJECT_ID/kibana-buildkite-pr-bot:$COMMIT_SHA',
+        'gcr.io/$PROJECT_ID/elastic-buildkite-pr-bot:$COMMIT_SHA',
         '--region',
         'us-central1',
         '--platform',
         'managed',
         '--service-account',
-        'kibana-buildkite-pr-bot@elastic-kibana-ci.iam.gserviceaccount.com',
+        'elastic-buildkite-pr-bot@elastic-ci-dev.iam.gserviceaccount.com',
         '--allow-unauthenticated',
         '--concurrency',
         '80',
         '--max-instances',
         '1',
         '--set-env-vars',
-        'NODE_ENV=production,BOOTSTRAP_GCP_SECRETS=true,LOG_TO_CONSOLE=true,SECRETS_PROJECT_ID=1003139005402,BUILDKITE_ORG=elastic,ENABLE_ES_CLOUD=true',
+        'NODE_ENV=production,BOOTSTRAP_GCP_SECRETS=true,LOG_TO_CONSOLE=true,SECRETS_PROJECT_ID=549465030936,BUILDKITE_ORG=elastic-flavortown,GCP_SECRET_PREFIX=elastic-buildkite-pr-bot',
       ]

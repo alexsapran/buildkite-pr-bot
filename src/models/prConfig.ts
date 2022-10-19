@@ -25,7 +25,7 @@ export class PrConfig {
   skip_target_branches: Array<string> = [];
 
   set_commit_status = false;
-  commit_status_context = '';
+  commit_status_context = 'buildkite/ci';
 
   skip_ci_on_only_changed: Array<string> = [];
   always_require_ci_on_changed: Array<string> = [];

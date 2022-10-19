@@ -261,7 +261,7 @@ export default class PullRequests {
       return;
     }
 
-    await this.triggerBuildkiteBuild(prConfig, context);
+    await this.triggerBuild(prConfig, context);
   };
 
   maybeSkipForOldBranch = async (prConfig: PrConfig, context: PullRequestEventContext) => {

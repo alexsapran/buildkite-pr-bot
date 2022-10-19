@@ -20,15 +20,17 @@ export class BuildkiteIngestData {
   es: Client;
 
   constructor(es: Client = null) {
-    this.es =
-      es ??
-      new Client({
+    if (es) {
+      this.es = es;
+    } else if (process.env.ES_CLOUD_ID) {
+      this.es = new Client({
         cloud: { id: process.env.ES_CLOUD_ID },
         auth: {
           username: process.env.ES_CLOUD_USERNAME,
           password: process.env.ES_CLOUD_PASSWORD,
         },
       });
+    }
   }
 
   getBuildJobsForCommits = async (commits: string[], pipelineSlugs: string[], state: string = null) => {

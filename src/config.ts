@@ -11,9 +11,14 @@ export const getRepoConfig = (repoOwner: string, repoName: string, config = appC
   let repoConfig = config.repos.find((repo) => repo.owner === repoOwner && repo.repo === repoName);
 
   if (!repoConfig) {
+    if (repoOwner !== 'elastic') {
+      return null;
+    }
+
     repoConfig = {
       owner: repoOwner,
       repo: repoName,
+      isDefault: true,
     };
   }
 
@@ -28,13 +33,28 @@ export default async function getConfigs(repoOwner: string, repoName: string, gi
     return null;
   }
 
-  const json = await getFileFromRepo(
-    github,
-    repoConfig.configOwner || repoConfig.owner,
-    repoConfig.configRepo || repoConfig.repo,
-    repoConfig.configBranch || 'main',
-    repoConfig.configPath || '.buildkite/pull-requests.json'
-  );
+  let json = '';
+  try {
+    json = await getFileFromRepo(
+      github,
+      repoConfig.configOwner || repoConfig.owner,
+      repoConfig.configRepo || repoConfig.repo,
+      repoConfig.configBranch || 'main',
+      repoConfig.configPath || '.buildkite/pull-requests.json'
+    );
+  } catch (ex) {
+    if (repoConfig.isDefault) {
+      json = await getFileFromRepo(
+        github,
+        repoConfig.configOwner || repoConfig.owner,
+        repoConfig.configRepo || repoConfig.repo,
+        repoConfig.configBranch || 'master',
+        repoConfig.configPath || '.buildkite/pull-requests.json'
+      );
+    } else {
+      throw ex;
+    }
+  }
   const parsed = JSON.parse(json);
 
   if (parsed?.jobs) {

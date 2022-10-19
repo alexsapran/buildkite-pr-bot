@@ -18,12 +18,18 @@ describe('config', () => {
       expect(repoConfig.repo).toBe('test-repo');
     });
 
-    it('should return default config', async () => {
-      const repoConfig = getRepoConfig('dne', 'test-repo', config);
+    it('should return default config for elastic repos', async () => {
+      const repoConfig = getRepoConfig('elastic', 'test-repo', config);
       expect(repoConfig).toEqual({
-        owner: 'dne',
+        owner: 'elastic',
         repo: 'test-repo',
+        isDefault: true,
       });
+    });
+
+    it('should not return default config for non-elastic repos', async () => {
+      const repoConfig = getRepoConfig('dne', 'test-repo', config);
+      expect(repoConfig).toEqual(null);
     });
   });
 
@@ -31,7 +37,7 @@ describe('config', () => {
     let mockGithub: Octokit;
 
     beforeEach(() => {
-      mockGithub = ({
+      mockGithub = {
         repos: {
           getContent: async (options) => {
             return {
@@ -49,7 +55,7 @@ describe('config', () => {
             };
           },
         },
-      } as any) as Octokit;
+      } as any as Octokit;
     });
 
     it('should return a valid config', async () => {
