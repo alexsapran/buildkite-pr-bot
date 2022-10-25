@@ -93,7 +93,7 @@ export default class PullRequests {
     const { pullRequest, parsedComment } = context;
     const targetBranch = pullRequest.base.ref;
 
-    context.log(`Triggering pipeline '${prConfig.pipelineSlug}' against ${targetBranch}...`);
+    context.log(`Triggering pipeline '${prConfig.pipeline_slug}' against ${targetBranch}...`);
 
     const labels = (pullRequest.labels || []).map((label) => label.name).join(',');
 
@@ -138,7 +138,7 @@ export default class PullRequests {
     }
 
     try {
-      const status = await this.buildkite.triggerBuild(prConfig.pipelineSlug, {
+      const status = await this.buildkite.triggerBuild(prConfig.pipeline_slug, {
         branch: `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`,
         commit: pullRequest.head.sha,
         pull_request_base_branch: targetBranch,
@@ -344,7 +344,7 @@ export default class PullRequests {
 
       for (const skipCiLabel of prConfig.skip_ci_labels) {
         if (prLabels.includes(skipCiLabel)) {
-          context.log(`Skipping '${prConfig.pipelineSlug}' because skip label '${prConfig.skip_ci_label}' is present`);
+          context.log(`Skipping '${prConfig.pipeline_slug}' because skip label '${prConfig.skip_ci_label}' is present`);
 
           return false;
         }

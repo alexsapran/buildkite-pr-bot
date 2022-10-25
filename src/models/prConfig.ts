@@ -1,5 +1,6 @@
 export class PrConfig {
-  pipelineSlug: string;
+  pipelineSlug?: string;
+  pipeline_slug?: string;
   repoOwner: string;
   repoName: string;
 
@@ -46,6 +47,10 @@ export class PrConfig {
       // Just for backwards compatibility
       if (config.skip_ci_label) {
         this.skip_ci_labels = [config.skip_ci_label];
+      }
+
+      if (config.pipelineSlug) {
+        this.pipeline_slug = config.pipelineSlug;
       }
     }
   }
