@@ -249,7 +249,7 @@ export default class PullRequests {
           sha: context.pullRequest.head.sha,
           state: 'success',
           description: 'No changes required CI. Skipped.',
-          context: prConfig.commit_status_context,
+          context: prConfig.commit_status_context || `buildkite/${prConfig.pipeline_slug}`,
         });
       }
 
