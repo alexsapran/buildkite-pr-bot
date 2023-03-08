@@ -258,7 +258,7 @@ The diff between the current commit and the most recent successful build step in
 - Value: `any string representing a github label`
 - Default: `<empty string>`
 
-**use_merge_commit** - _Experiemntal_
+**use_merge_commit** - _Experimental_
 
 - Use the merge commit for the PR, if the PR is mergeable, rather than the HEAD commit. If the PR is not mergeable, e.g. in the case of conflicts, the HEAD commit will be used.
 - Value: true or false
