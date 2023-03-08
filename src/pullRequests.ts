@@ -95,6 +95,11 @@ export default class PullRequests {
 
     context.log(`Triggering pipeline '${prConfig.pipeline_slug}' against ${targetBranch}...`);
 
+    const commitToBuild =
+      prConfig.use_merge_commit && pullRequest.mergeable && pullRequest.merge_commit_sha
+        ? pullRequest.merge_commit_sha
+        : pullRequest.head.sha;
+
     const labels = (pullRequest.labels || []).map((label) => label.name).join(',');
 
     const buildParams = {
@@ -105,7 +110,8 @@ export default class PullRequests {
       GITHUB_PR_OWNER: pullRequest.head.repo.owner.login,
       GITHUB_PR_REPO: pullRequest.head.repo.name,
       GITHUB_PR_BRANCH: pullRequest.head.ref,
-      GITHUB_PR_TRIGGERED_SHA: pullRequest.head.sha,
+      GITHUB_PR_HEAD_SHA: pullRequest.head.sha,
+      GITHUB_PR_TRIGGERED_SHA: commitToBuild,
       GITHUB_PR_LABELS: labels,
     };
 
@@ -140,7 +146,7 @@ export default class PullRequests {
     try {
       const status = await this.buildkite.triggerBuild(prConfig.pipeline_slug, {
         branch: `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`,
-        commit: pullRequest.head.sha,
+        commit: commitToBuild,
         pull_request_base_branch: targetBranch,
         pull_request_id: pullRequest.number,
         pull_request_repository: pullRequest.head.repo.git_url, // TODO clone_url?

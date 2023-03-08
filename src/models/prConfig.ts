@@ -33,6 +33,8 @@ export class PrConfig {
   skippable_changes_beta_label = 'ci:skip-when-possible';
   enable_skippable_commits = false;
 
+  use_merge_commit = false;
+
   kibana_build_reuse = false;
   kibana_build_reuse_pipeline_slugs: string[] = [];
   kibana_build_reuse_regexes: Array<string> = [];
