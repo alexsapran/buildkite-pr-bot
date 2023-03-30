@@ -427,7 +427,9 @@ describe('pullRequests', () => {
       getConfigsMock.mockResolvedValueOnce(prConfigs);
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
-      pr.triggerBuildOrSkipCi = jest.fn();
+      pr.triggerBuildOrSkipCi = jest.fn(pr.triggerBuildOrSkipCi);
+      pr.triggerBuild = jest.fn();
+      pr.notifyCommitNotMergeable = jest.fn();
 
       await pr.handleContext(context);
 
@@ -526,6 +528,36 @@ describe('pullRequests', () => {
 
       const { pr } = await doContextTest({}, [prConfig]);
       expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
+    });
+
+    describe('with use_merge_commit: true', () => {
+      it('should trigger a build when PR is not mergeable and not set to fail', async () => {
+        mocks.PR.mergeable = false;
+
+        const prConfig = createPrConfig({
+          use_merge_commit: true,
+          fail_on_not_mergable: false,
+        });
+
+        const { pr } = await doContextTest({}, [prConfig]);
+        expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
+        expect(pr.triggerBuild).toHaveBeenCalled();
+        expect(pr.notifyCommitNotMergeable).not.toHaveBeenCalled();
+      });
+
+      it('should not trigger a build when PR is not mergeable and set to fail', async () => {
+        mocks.PR.mergeable = false;
+
+        const prConfig = createPrConfig({
+          use_merge_commit: true,
+          fail_on_not_mergable: true,
+        });
+
+        const { pr } = await doContextTest({}, [prConfig]);
+        expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
+        expect(pr.triggerBuild).not.toHaveBeenCalled();
+        expect(pr.notifyCommitNotMergeable).toHaveBeenCalled();
+      });
     });
 
     describe('with a comment event', () => {

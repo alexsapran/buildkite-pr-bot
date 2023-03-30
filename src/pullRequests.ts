@@ -89,6 +89,42 @@ export default class PullRequests {
     }
   };
 
+  notifyCommitNotMergeable = async (context: PullRequestEventContext) => {
+    const { pullRequest } = context;
+
+    const commentBody = `:warning: This pull request is not mergeable, CI is not able to run.`;
+
+    try {
+      // Delete any existing comments from this bot
+      const comments = (
+        await this.github.issues.listComments({
+          owner: context.owner,
+          repo: context.repo,
+          issue_number: pullRequest.number,
+        })
+      ).data;
+
+      for (const comment of comments) {
+        if (comment.body === commentBody) {
+          await this.github.issues.deleteComment({
+            owner: context.owner,
+            repo: context.repo,
+            comment_id: comment.id,
+          });
+        }
+      }
+    } catch (ex) {
+      context.error(`Failed to add comment to PR #${pullRequest.number}: ${ex.message}`);
+    }
+
+    await this.github.issues.createComment({
+      owner: context.owner,
+      repo: context.repo,
+      issue_number: pullRequest.number,
+      body: commentBody,
+    });
+  };
+
   triggerBuildkiteBuild = async (prConfig: PrConfig, context: PullRequestEventContext) => {
     const { pullRequest, parsedComment } = context;
     const targetBranch = pullRequest.base.ref;
@@ -264,6 +300,26 @@ export default class PullRequests {
 
     const skippedForOldBranch = await this.maybeSkipForOldBranch(prConfig, context);
     if (skippedForOldBranch) {
+      return;
+    }
+
+    if (
+      prConfig.use_merge_commit &&
+      prConfig.fail_on_not_mergable &&
+      (!context.pullRequest.mergeable || !context.pullRequest.merge_commit_sha)
+    ) {
+      await this.notifyCommitNotMergeable(context);
+
+      if (prConfig.set_commit_status) {
+        await this.github.repos.createCommitStatus({
+          owner: context.owner,
+          repo: context.repo,
+          sha: context.pullRequest.head.sha,
+          state: 'error',
+          description: 'Could not trigger build',
+          context: prConfig.commit_status_context,
+        });
+      }
       return;
     }
 

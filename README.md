@@ -260,6 +260,12 @@ The diff between the current commit and the most recent successful build step in
 
 **use_merge_commit** - _Experimental_
 
-- Use the merge commit for the PR, if the PR is mergeable, rather than the HEAD commit. If the PR is not mergeable, e.g. in the case of conflicts, the HEAD commit will be used.
+- Use the merge commit for the PR, if the PR is mergeable, rather than the HEAD commit. If the PR is not mergeable, e.g. in the case of conflicts, the HEAD commit will be used. To fail the build instead, see `fail_on_not_mergeable`.
+- Value: true or false
+- Default: false
+
+**fail_on_not_mergeable** - _Experimental_
+
+- If `use_merge_commit` is set to true, and a PR commit is not mergeable (e.g. in the case of a merge conflict), skip the build, set a failing commit status, and leave a comment on the PR.
 - Value: true or false
 - Default: false

@@ -34,6 +34,7 @@ export class PrConfig {
   enable_skippable_commits = false;
 
   use_merge_commit = false;
+  fail_on_not_mergable = false;
 
   kibana_build_reuse = false;
   kibana_build_reuse_pipeline_slugs: string[] = [];
