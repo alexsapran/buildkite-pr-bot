@@ -37,6 +37,9 @@ const createMocks = () => {
       head: {
         ref: 'PR_BRANCH',
         sha: 'PR_SHA',
+        user: {
+          login: 'PR_HEAD_USER',
+        },
         repo: {
           owner: {
             login: 'PR_OWNER',
@@ -122,6 +125,9 @@ describe('pullRequests', () => {
         repo: 'repo',
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
+        sender: {
+          login: 'sender',
+        },
       });
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
@@ -147,12 +153,15 @@ describe('pullRequests', () => {
             "GITHUB_PR_BASE_REPO": "TARGET_REPO",
             "GITHUB_PR_BRANCH": "PR_BRANCH",
             "GITHUB_PR_HEAD_SHA": "PR_SHA",
+            "GITHUB_PR_HEAD_USER": "PR_HEAD_USER",
             "GITHUB_PR_LABELS": "label_1,label_2",
             "GITHUB_PR_NUMBER": "12345",
             "GITHUB_PR_OWNER": "PR_OWNER",
             "GITHUB_PR_REPO": "PR_REPO",
             "GITHUB_PR_TARGET_BRANCH": "TARGET_BRANCH",
             "GITHUB_PR_TRIGGERED_SHA": "PR_SHA",
+            "GITHUB_PR_TRIGGER_USER": "sender",
+            "GITHUB_PR_USER": "user",
           },
           "pull_request_base_branch": "TARGET_BRANCH",
           "pull_request_id": 12345,
@@ -180,6 +189,9 @@ describe('pullRequests', () => {
           body: comment.comment,
         } as EventPayloads.WebhookPayloadIssueCommentComment,
         parsedComment: comment,
+        sender: {
+          login: 'sender',
+        },
       });
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
@@ -206,6 +218,7 @@ describe('pullRequests', () => {
             "GITHUB_PR_COMMENT_VAR_LOCATION": "place",
             "GITHUB_PR_COMMENT_VAR_PRODUCT": "thing",
             "GITHUB_PR_HEAD_SHA": "PR_SHA",
+            "GITHUB_PR_HEAD_USER": "PR_HEAD_USER",
             "GITHUB_PR_LABELS": "label_1,label_2",
             "GITHUB_PR_NUMBER": "12345",
             "GITHUB_PR_OWNER": "PR_OWNER",
@@ -213,6 +226,8 @@ describe('pullRequests', () => {
             "GITHUB_PR_TARGET_BRANCH": "TARGET_BRANCH",
             "GITHUB_PR_TRIGGERED_SHA": "PR_SHA",
             "GITHUB_PR_TRIGGER_COMMENT": "buildkite deploy Thing to Place",
+            "GITHUB_PR_TRIGGER_USER": "sender",
+            "GITHUB_PR_USER": "user",
           },
           "pull_request_base_branch": "TARGET_BRANCH",
           "pull_request_id": 12345,
@@ -230,6 +245,9 @@ describe('pullRequests', () => {
         repo: 'repo',
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
+        sender: {
+          login: 'sender',
+        },
       });
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
@@ -329,6 +347,9 @@ describe('pullRequests', () => {
             repo: 'repo',
             pullRequest: mocks.PR,
             type: PullRequestEventTriggerType.Update,
+            sender: {
+              login: 'sender',
+            },
           });
           const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
           const shouldSkipCi = await pr.shouldSkipCi(mocks.PR_CONFIG, contextMock);
@@ -341,6 +362,9 @@ describe('pullRequests', () => {
             repo: 'repo',
             pullRequest: mocks.PR,
             type: PullRequestEventTriggerType.Update,
+            sender: {
+              login: 'sender',
+            },
           });
           const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
           mocks.PR_CONFIG.skip_ci_on_only_changed = ['^docs/', '\\.md$'];
@@ -354,6 +378,9 @@ describe('pullRequests', () => {
             repo: 'repo',
             pullRequest: mocks.PR,
             type: PullRequestEventTriggerType.Update,
+            sender: {
+              login: 'sender',
+            },
           });
           const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
           mocks.PR_CONFIG.skip_ci_on_only_changed = ['\\.md$'];
@@ -367,6 +394,9 @@ describe('pullRequests', () => {
             repo: 'repo',
             pullRequest: mocks.PR,
             type: PullRequestEventTriggerType.Update,
+            sender: {
+              login: 'sender',
+            },
           });
           const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
           mocks.PR_CONFIG.skip_ci_on_only_changed = ['^docs/', '\\.md$'];
@@ -395,6 +425,9 @@ describe('pullRequests', () => {
             repo: 'repo',
             pullRequest: mocks.PR,
             type: PullRequestEventTriggerType.Update,
+            sender: {
+              login: 'sender',
+            },
           });
           const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
           mocks.PR_CONFIG.skip_ci_on_only_changed = ['\\.md$'];
@@ -421,6 +454,9 @@ describe('pullRequests', () => {
         repo: 'repo',
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Create,
+        sender: {
+          login: 'sender',
+        },
         ...contextProps,
       });
 
@@ -806,6 +842,9 @@ describe('pullRequests', () => {
         repo: 'repo',
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
+        sender: {
+          login: 'sender',
+        },
       });
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
@@ -821,6 +860,9 @@ describe('pullRequests', () => {
         repo: 'repo',
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
+        sender: {
+          login: 'sender',
+        },
       });
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
@@ -851,6 +893,9 @@ describe('pullRequests', () => {
         repo: 'repo',
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
+        sender: {
+          login: 'sender',
+        },
       });
 
       const pr = new PullRequests(githubMock, buildkiteMock, buildkiteIngestDataMock);
@@ -876,6 +921,9 @@ describe('pullRequests', () => {
         repo: 'repo',
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
+        sender: {
+          login: 'sender',
+        },
       });
 
       mocks.PR.commits = 12;
@@ -942,6 +990,9 @@ describe('pullRequests', () => {
         repo: 'repo',
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
+        sender: {
+          login: 'sender',
+        },
       });
 
       mocks.PR.commits = 3;
@@ -962,6 +1013,9 @@ describe('pullRequests', () => {
         repo: 'repo',
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
+        sender: {
+          login: 'sender',
+        },
       });
 
       mocks.PR.commits = 6;
@@ -1008,6 +1062,9 @@ describe('pullRequests', () => {
         repo: 'repo',
         pullRequest: mocks.PR,
         type: PullRequestEventTriggerType.Update,
+        sender: {
+          login: 'sender',
+        },
       });
 
       mocks.PR_CONFIG.skip_ci_on_only_changed = ['\\.md$'];

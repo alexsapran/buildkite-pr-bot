@@ -40,6 +40,7 @@ export default async (github: Octokit, pullRequests: PullRequests, webhooks: Web
       owner: repository.owner.login,
       repo: repository.name,
       comment: payload.comment,
+      sender: payload.sender,
     });
 
     await pullRequests.handleContext(context);
@@ -90,6 +91,7 @@ export default async (github: Octokit, pullRequests: PullRequests, webhooks: Web
       pullRequest: pullRequestFromApi,
       owner: repository.owner.login,
       repo: repository.name,
+      sender: payload.sender,
     });
 
     await pullRequests.handleContext(context);

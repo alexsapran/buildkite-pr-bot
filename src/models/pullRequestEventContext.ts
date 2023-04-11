@@ -12,6 +12,9 @@ export enum PullRequestEventTriggerType {
 }
 export class PullRequestEventContextData {
   type: PullRequestEventTriggerType;
+  sender: {
+    login: string;
+  };
 
   owner: string;
   repo: string;

@@ -146,9 +146,12 @@ export default class PullRequests {
       GITHUB_PR_OWNER: pullRequest.head.repo.owner.login,
       GITHUB_PR_REPO: pullRequest.head.repo.name,
       GITHUB_PR_BRANCH: pullRequest.head.ref,
+      GITHUB_PR_USER: pullRequest.user.login,
       GITHUB_PR_HEAD_SHA: pullRequest.head.sha,
+      GITHUB_PR_HEAD_USER: pullRequest.head.user.login,
       GITHUB_PR_TRIGGERED_SHA: commitToBuild,
       GITHUB_PR_LABELS: labels,
+      GITHUB_PR_TRIGGER_USER: context.sender?.login ?? '',
     };
 
     if (parsedComment?.match) {
