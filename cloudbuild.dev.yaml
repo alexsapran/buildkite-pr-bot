@@ -35,5 +35,5 @@ steps:
         '--max-instances',
         '1',
         '--set-env-vars',
-        'NODE_ENV=production,BOOTSTRAP_GCP_SECRETS=true,LOG_TO_CONSOLE=true,SECRETS_PROJECT_ID=549465030936,BUILDKITE_ORG=elastic-flavortown,GCP_SECRET_PREFIX=elastic-buildkite-pr-bot',
+        'NODE_ENV=production,BOOTSTRAP_GCP_SECRETS=true,LOG_TO_CONSOLE=true,SECRETS_PROJECT_ID=549465030936,BUILDKITE_ORG=elastic-flavortown,GCP_SECRET_PREFIX=elastic-buildkite-pr-bot,ES_INDEX_PREFIX=flavortown,ENABLE_ES_CLOUD=true',
       ]

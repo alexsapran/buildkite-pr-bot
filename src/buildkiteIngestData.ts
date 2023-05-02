@@ -33,6 +33,15 @@ export class BuildkiteIngestData {
     }
   }
 
+  getIndex = (index: string) => {
+    let prefix = process.env.ES_INDEX_PREFIX ?? '';
+    if (prefix && !prefix.endsWith('-')) {
+      prefix += '-';
+    }
+
+    return prefix + index;
+  };
+
   getBuildJobsForCommits = async (commits: string[], pipelineSlugs: string[], state: string = null) => {
     const query: QueryDslQueryContainer = {
       bool: {
@@ -65,7 +74,7 @@ export class BuildkiteIngestData {
     }
 
     const buildJobs = await this.es.search<JobFromIngest>({
-      index: 'buildkite-jobs',
+      index: this.getIndex('buildkite-jobs'),
       body: {
         sort: [
           {
@@ -84,7 +93,7 @@ export class BuildkiteIngestData {
 
   getBuildsForCommits = async (commits: string[], pipelineSlugs: string[]) => {
     const buildsFromEs = await this.es.search<Build>({
-      index: 'buildkite-builds',
+      index: this.getIndex('buildkite-builds'),
       body: {
         sort: [
           {
