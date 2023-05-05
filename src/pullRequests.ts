@@ -395,8 +395,12 @@ export default class PullRequests {
       return false;
     }
 
-    if (prConfig.target_branch && prConfig.target_branch !== context.pullRequest.base.ref) {
-      return false;
+    if (prConfig.target_branch) {
+      const targetBranches = Array.isArray(prConfig.target_branch) ? prConfig.target_branch : [prConfig.target_branch];
+
+      if (!targetBranches.includes(context.pullRequest.base.ref)) {
+        return false;
+      }
     }
 
     if (prConfig.skip_target_branches?.length && prConfig.skip_target_branches.includes(context.pullRequest.base.ref)) {

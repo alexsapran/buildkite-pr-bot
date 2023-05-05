@@ -74,7 +74,7 @@ to trigger PRs.
 **target_branch**
 
 - Only trigger PRs that target this branch
-- Value: branch name, e.g. `master`
+- Value: branch name, e.g. `master` or array of branch names, e.g. `["master", "main"]`
 - Default: `<empty string>`
 
 **allow_org_users**

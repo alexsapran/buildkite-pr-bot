@@ -13,7 +13,7 @@ export class PrConfig {
   allowed_repo_permissions?: null | Array<string>;
   allowed_list?: null | Array<string>;
 
-  target_branch = '';
+  target_branch: string | Array<string> = '';
   trigger_comment_regex = '^(?:(?:buildkite\\W+)?(?:build|test)\\W+(?:this|it))|^retest$';
 
   labels?: Array<string>;

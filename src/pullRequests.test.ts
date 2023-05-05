@@ -516,6 +516,15 @@ describe('pullRequests', () => {
       expect(pr.triggerBuildOrSkipCi).not.toHaveBeenCalled();
     });
 
+    it('should trigger a build if target branch config is an array', async () => {
+      const prConfig = createPrConfig({
+        target_branch: ['invalid-target-branch', 'TARGET_BRANCH'],
+      });
+
+      const { pr } = await doContextTest({}, [prConfig]);
+      expect(pr.triggerBuildOrSkipCi).toHaveBeenCalled();
+    });
+
     it('should trigger a build if no target branch is required', async () => {
       const prConfig = createPrConfig({
         target_branch: null,
