@@ -48,7 +48,7 @@ export class BuildkiteIngestData {
         must: [
           {
             terms: {
-              'build.commit.keyword': commits,
+              'build.commit.keyword': commits || [],
             },
           },
           {
@@ -105,7 +105,7 @@ export class BuildkiteIngestData {
             must: [
               {
                 terms: {
-                  'commit.keyword': commits,
+                  'commit.keyword': commits || [],
                 },
               },
               {
