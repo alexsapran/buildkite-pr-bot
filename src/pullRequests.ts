@@ -364,7 +364,8 @@ export default class PullRequests {
       try {
         await this.cancelIntermediateBuilds(prConfig, context, buildStatus);
       } catch (ex) {
-        context.error('Error while trying to cancel intermediate builds', ex);
+        context.error('Error while trying to cancel intermediate builds');
+        context.error(ex.toString);
       }
     }
 
@@ -397,7 +398,8 @@ export default class PullRequests {
       try {
         await this.buildkite.cancelBuild(prConfig.pipeline_slug, build.number);
       } catch (ex) {
-        context.error(`Error while trying to cancel build #${build.number}`, ex);
+        context.error(`Error while trying to cancel build #${build.number}`);
+        context.error(ex.toString);
       }
     }
   };
