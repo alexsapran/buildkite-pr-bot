@@ -2,7 +2,7 @@ import { Octokit, RestEndpointMethodTypes } from '@octokit/rest';
 import { parseComment } from './lib/parseComment';
 import { PrConfig } from './models/prConfig';
 import PullRequestEventContext, { PullRequestEventTriggerType } from './models/pullRequestEventContext';
-import Buildkite from './buildkite';
+import Buildkite, { BuildkiteBuild } from './buildkite';
 import getConfigs from './config';
 import getFileFromRepo from './lib/getFileFromRepo';
 import { BuildkiteIngestData } from './buildkiteIngestData';
@@ -360,6 +360,14 @@ export default class PullRequests {
   triggerBuild = async (prConfig: PrConfig, context: PullRequestEventContext) => {
     const buildStatus = await this.triggerBuildkiteBuild(prConfig, context);
 
+    if (prConfig.cancel_intermediate_builds) {
+      try {
+        await this.cancelIntermediateBuilds(prConfig, context, buildStatus);
+      } catch (ex) {
+        context.error('Error while trying to cancel intermediate builds', ex);
+      }
+    }
+
     if (prConfig.set_commit_status && prConfig.commit_status_context) {
       try {
         await this.github.repos.createCommitStatus({
@@ -373,6 +381,23 @@ export default class PullRequests {
         });
       } catch (ex) {
         context.error('Error while trying to create commit status', ex);
+      }
+    }
+  };
+
+  cancelIntermediateBuilds = async (prConfig: PrConfig, context: PullRequestEventContext, buildStatus: BuildkiteBuild) => {
+    if (!prConfig.cancel_intermediate_builds_on_comment && context.type === PullRequestEventTriggerType.Comment) {
+      return;
+    }
+
+    const branch = `${context.pullRequest.head.repo.owner.login}:${context.pullRequest.head.ref}`;
+    const builds = await this.buildkite.getRunningBuilds(prConfig.pipeline_slug, branch);
+    const buildsToCancel = builds.filter((build) => build.number < buildStatus.number);
+    for (const build of buildsToCancel) {
+      try {
+        await this.buildkite.cancelBuild(prConfig.pipeline_slug, build.number);
+      } catch (ex) {
+        context.error(`Error while trying to cancel build #${build.number}`, ex);
       }
     }
   };

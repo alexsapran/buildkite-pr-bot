@@ -54,4 +54,20 @@ export default class Buildkite {
 
     return (await this.http.post(url, options)).data;
   };
+
+  // https://buildkite.com/docs/apis/rest-api/builds#list-builds-for-a-pipeline
+  getRunningBuilds = async (pipelineSlug: string, branch: string): Promise<BuildkiteBuild[]> => {
+    const url = `v2/organizations/${this.buildkiteOrg}/pipelines/${pipelineSlug}/builds?branch=${encodeURIComponent(
+      branch
+    )}&state[]=scheduled&state[]=running&state[]=failing`;
+
+    return (await this.http.get(url)).data;
+  };
+
+  // https://buildkite.com/docs/apis/rest-api/builds#cancel-a-build
+  cancelBuild = async (pipelineSlug: string, buildNumber: number): Promise<void> => {
+    const url = `v2/organizations/${this.buildkiteOrg}/pipelines/${pipelineSlug}/builds/${buildNumber}/cancel`;
+
+    await this.http.put(url);
+  };
 }

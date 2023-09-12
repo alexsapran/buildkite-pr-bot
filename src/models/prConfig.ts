@@ -43,6 +43,9 @@ export class PrConfig {
 
   kibana_versions_check = false;
 
+  cancel_intermediate_builds = false;
+  cancel_intermediate_builds_on_comment = true; // This one is only relevant if cancel_intermediate_builds=true
+
   constructor(config: PrConfig = null) {
     if (config) {
       Object.assign(this, config);
