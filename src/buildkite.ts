@@ -1,4 +1,4 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 export interface BuildkiteTriggerBuildParams {
   commit: string; // TODO triggered commit?
@@ -48,11 +48,50 @@ export default class Buildkite {
     });
   }
 
+  async get<T = any, R = AxiosResponse<T>>(url: string, config?: AxiosRequestConfig): Promise<R> {
+    try {
+      return await this.http.get<T, R>(url, config);
+    } catch (ex: any) {
+      if (ex.isAxiosError) {
+        ex.config = { REDACTED: 'REDACTED' };
+        ex.request = { REDACTED: 'REDACTED' };
+        ex.response = { REDACTED: 'REDACTED' };
+      }
+      throw ex;
+    }
+  }
+
+  async post<T = any, R = AxiosResponse<T>>(url: string, data?: any, config?: AxiosRequestConfig): Promise<R> {
+    try {
+      return await this.http.post<T, R>(url, data, config);
+    } catch (ex: any) {
+      if (ex.isAxiosError) {
+        ex.config = { REDACTED: 'REDACTED' };
+        ex.request = { REDACTED: 'REDACTED' };
+        ex.response = { REDACTED: 'REDACTED' };
+      }
+      throw ex;
+    }
+  }
+
+  async put<T = any, R = AxiosResponse<T>>(url: string, data?: any, config?: AxiosRequestConfig): Promise<R> {
+    try {
+      return await this.http.put<T, R>(url, data, config);
+    } catch (ex: any) {
+      if (ex.isAxiosError) {
+        ex.config = { REDACTED: 'REDACTED' };
+        ex.request = { REDACTED: 'REDACTED' };
+        ex.response = { REDACTED: 'REDACTED' };
+      }
+      throw ex;
+    }
+  }
+
   // https://buildkite.com/docs/apis/rest-api/builds#create-a-build
   triggerBuild = async (pipelineSlug: string, options: BuildkiteTriggerBuildParams): Promise<BuildkiteBuild> => {
     const url = `v2/organizations/${this.buildkiteOrg}/pipelines/${pipelineSlug}/builds`;
 
-    return (await this.http.post(url, options)).data;
+    return (await this.post(url, options)).data;
   };
 
   // https://buildkite.com/docs/apis/rest-api/builds#list-builds-for-a-pipeline
@@ -61,13 +100,13 @@ export default class Buildkite {
       branch
     )}&state[]=scheduled&state[]=running&state[]=failing`;
 
-    return (await this.http.get(url)).data;
+    return (await this.get(url)).data;
   };
 
   // https://buildkite.com/docs/apis/rest-api/builds#cancel-a-build
   cancelBuild = async (pipelineSlug: string, buildNumber: number): Promise<void> => {
     const url = `v2/organizations/${this.buildkiteOrg}/pipelines/${pipelineSlug}/builds/${buildNumber}/cancel`;
 
-    await this.http.put(url);
+    await this.put(url);
   };
 }
