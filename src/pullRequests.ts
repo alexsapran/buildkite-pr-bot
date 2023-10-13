@@ -183,9 +183,12 @@ export default class PullRequests {
     }
 
     try {
+      const triggerBranch = prConfig.always_trigger_branch || `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`;
+      const triggerCommit = prConfig.always_trigger_branch ? 'HEAD' : commitToBuild;
+
       const status = await this.buildkite.triggerBuild(prConfig.pipeline_slug, {
-        branch: `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`,
-        commit: commitToBuild,
+        branch: triggerBranch,
+        commit: triggerCommit,
         pull_request_base_branch: targetBranch,
         pull_request_id: pullRequest.number,
         pull_request_repository: pullRequest.head.repo.git_url, // TODO clone_url?
