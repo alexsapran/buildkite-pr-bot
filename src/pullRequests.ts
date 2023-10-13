@@ -2,7 +2,7 @@ import { Octokit, RestEndpointMethodTypes } from '@octokit/rest';
 import { parseComment } from './lib/parseComment';
 import { PrConfig } from './models/prConfig';
 import PullRequestEventContext, { PullRequestEventTriggerType } from './models/pullRequestEventContext';
-import Buildkite, { BuildkiteBuild } from './buildkite';
+import Buildkite, { BuildkiteBuild, BuildkiteTriggerBuildParams } from './buildkite';
 import getConfigs from './config';
 import getFileFromRepo from './lib/getFileFromRepo';
 import { BuildkiteIngestData } from './buildkiteIngestData';
@@ -183,17 +183,26 @@ export default class PullRequests {
     }
 
     try {
-      const triggerBranch = prConfig.always_trigger_branch || `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`;
-      const triggerCommit = prConfig.always_trigger_branch ? 'HEAD' : commitToBuild;
+      let triggerParams: BuildkiteTriggerBuildParams;
 
-      const status = await this.buildkite.triggerBuild(prConfig.pipeline_slug, {
-        branch: triggerBranch,
-        commit: triggerCommit,
-        pull_request_base_branch: targetBranch,
-        pull_request_id: pullRequest.number,
-        pull_request_repository: pullRequest.head.repo.git_url, // TODO clone_url?
-        env: buildParams,
-      });
+      if (prConfig.always_trigger_branch) {
+        triggerParams = {
+          branch: prConfig.always_trigger_branch,
+          commit: 'HEAD',
+          env: buildParams,
+        };
+      } else {
+        triggerParams = {
+          branch: `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`,
+          commit: commitToBuild,
+          pull_request_base_branch: targetBranch,
+          pull_request_id: pullRequest.number,
+          pull_request_repository: pullRequest.head.repo.git_url, // TODO clone_url?
+          env: buildParams,
+        };
+      }
+
+      const status = await this.buildkite.triggerBuild(prConfig.pipeline_slug, triggerParams);
 
       context.log(`Triggered build #${status.number} - ${status.web_url}`);
 

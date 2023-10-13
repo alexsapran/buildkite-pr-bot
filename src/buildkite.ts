@@ -4,9 +4,9 @@ export interface BuildkiteTriggerBuildParams {
   commit: string; // TODO triggered commit?
   branch: string;
   env: Record<string, string>;
-  pull_request_base_branch: string;
-  pull_request_id: string | number;
-  pull_request_repository: string;
+  pull_request_base_branch?: string;
+  pull_request_id?: string | number;
+  pull_request_repository?: string;
 }
 
 // Note: There's actually a lot more available in this response
