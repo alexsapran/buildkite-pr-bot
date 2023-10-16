@@ -129,7 +129,7 @@ export default class PullRequests {
     const { pullRequest, parsedComment } = context;
     const targetBranch = pullRequest.base.ref;
 
-    context.log(`Triggering pipeline '${prConfig.pipeline_slug}' against ${targetBranch}...`);
+    context.log(`Triggering pipeline '${prConfig.pipeline_slug}' against ${prConfig.always_trigger_branch || targetBranch}...`);
 
     const commitToBuild =
       prConfig.use_merge_commit && pullRequest.mergeable && pullRequest.merge_commit_sha

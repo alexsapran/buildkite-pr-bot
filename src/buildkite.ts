@@ -48,15 +48,27 @@ export default class Buildkite {
     });
   }
 
+  cleanException = (url: string, ex: any) => {
+    if (ex.isAxiosError) {
+      ex.url = url;
+      if (ex.response?.data) {
+        if (ex.response.data?.message) {
+          ex.response_message = ex.response.data.message;
+        } else {
+          ex.data = ex.response.data;
+        }
+      }
+      ex.config = { REDACTED: 'REDACTED' };
+      ex.request = { REDACTED: 'REDACTED' };
+      ex.response = { REDACTED: 'REDACTED' };
+    }
+  };
+
   async get<T = any, R = AxiosResponse<T>>(url: string, config?: AxiosRequestConfig): Promise<R> {
     try {
       return await this.http.get<T, R>(url, config);
     } catch (ex: any) {
-      if (ex.isAxiosError) {
-        ex.config = { REDACTED: 'REDACTED' };
-        ex.request = { REDACTED: 'REDACTED' };
-        ex.response = { REDACTED: 'REDACTED' };
-      }
+      this.cleanException(url, ex);
       throw ex;
     }
   }
@@ -65,11 +77,7 @@ export default class Buildkite {
     try {
       return await this.http.post<T, R>(url, data, config);
     } catch (ex: any) {
-      if (ex.isAxiosError) {
-        ex.config = { REDACTED: 'REDACTED' };
-        ex.request = { REDACTED: 'REDACTED' };
-        ex.response = { REDACTED: 'REDACTED' };
-      }
+      this.cleanException(url, ex);
       throw ex;
     }
   }
@@ -78,11 +86,7 @@ export default class Buildkite {
     try {
       return await this.http.put<T, R>(url, data, config);
     } catch (ex: any) {
-      if (ex.isAxiosError) {
-        ex.config = { REDACTED: 'REDACTED' };
-        ex.request = { REDACTED: 'REDACTED' };
-        ex.response = { REDACTED: 'REDACTED' };
-      }
+      this.cleanException(url, ex);
       throw ex;
     }
   }
