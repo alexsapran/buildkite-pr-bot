@@ -185,6 +185,13 @@ export default class PullRequests {
     try {
       let triggerParams: BuildkiteTriggerBuildParams;
 
+      // when using the merge commit of a PR, we need to fetch a special refspec
+      const trigger_branch = 
+      prConfig.use_merge_commit && pullRequest.mergeable && pullRequest.merge_commit_sha
+        ? `pull/${pullRequest.number.toString()}/merge`
+        : `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`;
+      
+      
       if (prConfig.always_trigger_branch) {
         triggerParams = {
           branch: prConfig.always_trigger_branch,
@@ -193,7 +200,7 @@ export default class PullRequests {
         };
       } else {
         triggerParams = {
-          branch: `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`,
+          branch: trigger_branch,
           commit: commitToBuild,
           pull_request_base_branch: targetBranch,
           pull_request_id: pullRequest.number,
