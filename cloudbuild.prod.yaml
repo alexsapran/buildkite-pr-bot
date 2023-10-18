@@ -35,5 +35,5 @@ steps:
         '--max-instances',
         '1',
         '--set-env-vars',
-        'NODE_ENV=production,BOOTSTRAP_GCP_SECRETS=true,LOG_TO_CONSOLE=true,SECRETS_PROJECT_ID=543704608146,BUILDKITE_ORG=elastic,GCP_SECRET_PREFIX=elastic-buildkite-pr-bot,ENABLE_ES_CLOUD=true',
+        'NODE_ENV=production,BOOTSTRAP_GCP_SECRETS=true,LOG_TO_CONSOLE=true,SECRETS_PROJECT_ID=543704608146,BUILDKITE_ORG=elastic,GCP_SECRET_PREFIX=elastic-buildkite-pr-bot,ENABLE_ES_CLOUD=true,ORG_WIDE_CONFIGS=elastic/pr-bot-config-test',
       ]

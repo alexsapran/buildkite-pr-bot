@@ -63,3 +63,7 @@ export class PrConfig {
     }
   }
 }
+
+export class OrgWidePrConfig extends PrConfig {
+  repositories: Array<string> = [];
+}

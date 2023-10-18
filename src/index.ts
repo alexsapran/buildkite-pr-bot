@@ -40,7 +40,8 @@ import { BuildkiteIngestData } from './buildkiteIngestData';
     res.send('i am alive');
   });
 
-  app.listen(process.env.PORT || 3000, () => logger.info('Server started on port 3000'));
+  const port = process.env.PORT || 3000;
+  app.listen(port, () => logger.info(`Server started on port ${port}`));
 
   await setupWebhooks(github, new PullRequests(github, buildkite, buildkiteIngestData), webhooks);
 
