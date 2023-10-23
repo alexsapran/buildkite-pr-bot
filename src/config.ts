@@ -100,17 +100,21 @@ export default async function getConfigs(repoOwner: string, repoName: string, gi
   const branch = repoConfig.configBranch || 'main';
   const path = repoConfig.configPath || '.buildkite/pull-requests.json';
 
-  let json = '';
-  try {
-    json = await getFileFromRepo(github, owner, name, branch, path);
-  } catch (ex) {
-    if (repoConfig.isDefault) {
-      json = await getFileFromRepo(github, owner, name, 'master', path);
-    } else {
-      throw ex;
+  const getJson = async (branch) => {
+    try {
+      return await getFileFromRepo(github, owner, name, branch, path);
+    } catch (ex) {
+      return '';
     }
+  };
+
+  let parsed = null;
+  try {
+    const json = (await getJson(branch)) || (await getJson('master'));
+    parsed = json ? JSON.parse(json) : [];
+  } catch (ex) {
+    console.error('Error parsing config: ', ex.message);
   }
-  const parsed = JSON.parse(json);
 
   let prConfigs: PrConfig[] = [...orgWideConfigs.filter((c) => c.repositories?.includes(`${repoOwner}/${repoName}`))];
 
