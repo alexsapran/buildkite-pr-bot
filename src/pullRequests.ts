@@ -186,12 +186,11 @@ export default class PullRequests {
       let triggerParams: BuildkiteTriggerBuildParams;
 
       // when using the merge commit of a PR, we need to fetch a special refspec
-      const trigger_branch = 
-      prConfig.use_merge_commit && pullRequest.mergeable && pullRequest.merge_commit_sha
-        ? `pull/${pullRequest.number.toString()}/merge`
-        : `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`;
-      
-      
+      const trigger_branch =
+        prConfig.use_merge_commit && pullRequest.mergeable && pullRequest.merge_commit_sha
+          ? `pull/${pullRequest.number.toString()}/merge`
+          : `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`;
+
       if (prConfig.always_trigger_branch) {
         triggerParams = {
           branch: prConfig.always_trigger_branch,
@@ -423,8 +422,8 @@ export default class PullRequests {
     }
   };
 
-  parseAndSetComment = (context: PullRequestEventContext, regex: string) => {
-    const parsedComment = parseComment(regex, context.comment.body);
+  parseAndSetComment = (context: PullRequestEventContext, regex: string, flags: string = 'i') => {
+    const parsedComment = parseComment(regex, context.comment.body, flags);
 
     if (parsedComment.match) {
       context.parsedComment = parsedComment;
@@ -492,7 +491,7 @@ export default class PullRequests {
         context.comment &&
         prConfig.build_on_comment &&
         prConfig.trigger_comment_regex &&
-        this.parseAndSetComment(context, prConfig.trigger_comment_regex)
+        this.parseAndSetComment(context, prConfig.trigger_comment_regex, prConfig.trigger_comment_regex_flags)
       );
     }
 
@@ -512,7 +511,7 @@ export default class PullRequests {
       return false;
     }
 
-    return this.parseAndSetComment(context, prConfig.always_trigger_comment_regex);
+    return this.parseAndSetComment(context, prConfig.always_trigger_comment_regex, prConfig.always_trigger_comment_regex_flags);
   };
 
   checkUserCanTrigger = async (prConfig: PrConfig, context: PullRequestEventContext) => {

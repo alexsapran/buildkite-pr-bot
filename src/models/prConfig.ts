@@ -15,10 +15,12 @@ export class PrConfig {
 
   target_branch: string | Array<string> = '';
   trigger_comment_regex = '^(?:(?:buildkite\\W+)?(?:build|test)\\W+(?:this|it))|^retest$';
+  trigger_comment_regex_flags = 'i';
 
   labels?: Array<string>;
 
   always_trigger_comment_regex = '';
+  always_trigger_comment_regex_flags = 'i';
 
   skip_ci_label = ''; // for backwards compatibility with old version
   skip_ci_labels: Array<string> = ['skip-ci'];

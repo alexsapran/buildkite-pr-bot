@@ -40,4 +40,12 @@ describe('parseComment', () => {
     expect(result.groups?.product).toBe('Thing');
     expect(result.groups?.location).toBe('Place');
   });
+
+  it('should work with custom flags', () => {
+    const regex = 'a.b';
+    const comment = 'a\nb';
+
+    const result = parseComment(regex, comment, 's');
+    expect(result.match).toBeTruthy();
+  });
 });
