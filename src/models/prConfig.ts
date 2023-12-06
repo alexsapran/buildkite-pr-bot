@@ -14,7 +14,7 @@ export class PrConfig {
   allowed_list?: null | Array<string>;
 
   target_branch: string | Array<string> = '';
-  trigger_comment_regex = '^(?:(?:buildkite\\W+)?(?:build|test)\\W+(?:this|it))|^retest$';
+  trigger_comment_regex = '^(?:(?:buildkite\\W+)?(?:build|test)\\W+(?:this|it))|^retest$|^\/ci$';
   trigger_comment_regex_flags = 'i';
 
   labels?: Array<string>;
