@@ -497,6 +497,10 @@ export default class PullRequests {
 
     // If this trigger was from a commit or initial PR creation, and the above checks didn't fail, we should trigger a build
     if (context.type === PullRequestEventTriggerType.Create || context.type === PullRequestEventTriggerType.Update) {
+      if (context.pullRequest.draft) {
+        return prConfig.build_drafts && prConfig.build_on_commit;
+      }
+
       return prConfig.build_on_commit;
     }
 
