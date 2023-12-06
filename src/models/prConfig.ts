@@ -7,7 +7,7 @@ export class PrConfig {
   allow_org_users = false;
   build_on_comment = true;
   build_on_commit = true;
-  build_drafts = false;
+  build_drafts = true;
   // cancel_in_progress_builds_on_update = false; // TODO we can likely remove this and rely on Buildkite's Pipeline settings
   enabled = false;
 
