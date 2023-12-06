@@ -70,7 +70,7 @@ export default async (github: Octokit, pullRequests: PullRequests, webhooks: Web
     if (resp.data.head.sha !== pull_request.head.sha) {
       logger.info(
         `PR ${repository.owner.login}/${repository.name}/${pull_request.number} webhook/API shas don't match. Sleeping and then checking again.\n` +
-          `Webhook sha: ${pull_request.head.sha} / API sha: ${resp.data.head.sha}`
+        `Webhook sha: ${pull_request.head.sha} / API sha: ${resp.data.head.sha}`
       );
 
       await sleep(process.env.DRY_RUN ? 1 : 10000);
@@ -101,8 +101,9 @@ export default async (github: Octokit, pullRequests: PullRequests, webhooks: Web
     // await webhooks.receive(require('./test-payloads/demo')());
     // await webhooks.receive(require('./test-payloads/ga')());
     // await webhooks.receive(require('./test-payloads/pr-opened')());
-    await webhooks.receive(require('./test-payloads/pr-synchronize')());
+    // await webhooks.receive(require('./test-payloads/pr-synchronize')());
     // await webhooks.receive(require('./test-payloads/trigger-comment')());
-    // await webhooks.receive(require('./test-payloads/trigger-comment')());
+    await webhooks.receive(require('./test-payloads/draft-trigger-comment')());
+    // await webhooks.receive(require('./test-payloads/draft-pr-opened')());
   }
 };
