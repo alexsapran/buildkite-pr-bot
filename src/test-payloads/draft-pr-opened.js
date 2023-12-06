@@ -2,7 +2,7 @@ module.exports = () => ({
   id: '288696904',
   name: 'pull_request',
   payload: {
-    "action": "reopened",
+    "action": "opened",
     "number": 172421,
     "pull_request": {
       "url": "https://api.github.com/repos/elastic/kibana/pulls/172421",

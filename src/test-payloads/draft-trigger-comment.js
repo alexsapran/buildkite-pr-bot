@@ -104,7 +104,7 @@ module.exports = () => ({
       "created_at": "2023-12-06T03:42:19Z",
       "updated_at": "2023-12-06T03:42:19Z",
       "author_association": "CONTRIBUTOR",
-      "body": "/ci",
+      "body": "buildkite test this",
       "reactions": {
         "url": "https://api.github.com/repos/elastic/kibana/issues/comments/1842034990/reactions",
         "total_count": 0,
