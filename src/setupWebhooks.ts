@@ -104,6 +104,7 @@ export default async (github: Octokit, pullRequests: PullRequests, webhooks: Web
     // await webhooks.receive(require('./test-payloads/pr-synchronize')());
     // await webhooks.receive(require('./test-payloads/trigger-comment')());
     // await webhooks.receive(require('./test-payloads/draft-trigger-comment')());
-    await webhooks.receive(require('./test-payloads/draft-pr-opened')());
+    // await webhooks.receive(require('./test-payloads/draft-pr-opened')());
+    await webhooks.receive(require('./test-payloads/draft-pr-synchronize')());
   }
 };
