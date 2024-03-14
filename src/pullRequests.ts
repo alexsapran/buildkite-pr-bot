@@ -133,7 +133,7 @@ export default class PullRequests {
 
     const commitToBuild =
       prConfig.use_merge_commit && pullRequest.mergeable && pullRequest.merge_commit_sha
-        ? pullRequest.merge_commit_sha
+        ? "HEAD"
         : pullRequest.head.sha;
 
     const labels = (pullRequest.labels || []).map((label) => label.name).join(',');
