@@ -153,6 +153,9 @@ export default class PullRequests {
       GITHUB_PR_LABELS: labels,
       GITHUB_PR_TRIGGER_USER: context.sender?.login ?? '',
     };
+    if (prConfig.use_merge_commit && pullRequest.mergeable) {
+      buildParams["BUILDKITE_REFSPEC"]=`pull/${pullRequest.number.toString()}/merge`
+    }
 
     if (parsedComment?.match) {
       buildParams['GITHUB_PR_TRIGGER_COMMENT'] = parsedComment.comment;
@@ -185,12 +188,6 @@ export default class PullRequests {
     try {
       let triggerParams: BuildkiteTriggerBuildParams;
 
-      // when using the merge commit of a PR, we need to fetch a special refspec
-      const trigger_branch =
-        prConfig.use_merge_commit && pullRequest.mergeable && pullRequest.merge_commit_sha
-          ? `pull/${pullRequest.number.toString()}/merge`
-          : `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`;
-
       if (prConfig.always_trigger_branch) {
         triggerParams = {
           branch: prConfig.always_trigger_branch,
@@ -199,7 +196,7 @@ export default class PullRequests {
         };
       } else {
         triggerParams = {
-          branch: trigger_branch,
+          branch: `${pullRequest.head.repo.owner.login}:${pullRequest.head.ref}`,
           commit: commitToBuild,
           pull_request_base_branch: targetBranch,
           pull_request_id: pullRequest.number,
